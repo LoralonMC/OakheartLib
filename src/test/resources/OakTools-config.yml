@@ -1,0 +1,775 @@
+# OakTools Configuration
+# Missing config options are automatically added on plugin load
+
+# ============================================================
+# GENERAL SETTINGS
+# ============================================================
+general:
+  debug: false
+  # Warn players when tool durability drops below this percentage (0 to disable)
+  durability-warning-threshold: 10
+  restrictions:
+    worlds:
+      mode: BLACKLIST
+      list:
+        - example_disabled_world
+        - example_minigames_world
+    gamemode:
+      creative:
+        allow-use: true
+        consume-blocks: false
+        consume-durability: true
+      adventure:
+        allow-use: false
+        consume-blocks: true
+        consume-durability: true
+      spectator:
+        allow-use: false
+
+# ============================================================
+# TOOLS
+# ============================================================
+tools:
+  file:
+    enabled: true
+    # Display name and lore (MiniMessage format)
+    # Placeholders: <tool>, <cur> (damage taken), <max>, <remaining>, <percent>
+    display:
+      enabled: true
+      name: "File"
+      lore: []
+    base-material: WARPED_FUNGUS_ON_A_STICK
+    # Model settings (choose one format):
+    #   Integer (e.g., 1001) -> Vanilla CustomModelData (legacy)
+    #   "model:namespace:key" -> Modern Item Model (1.21.4+, recommended)
+    #   "nexo:id" -> Nexo plugin
+    #   "itemsadder:id" -> ItemsAdder plugin
+    model-id: "nexo:file"
+    durability:
+      max: 250
+      use-vanilla-damage-bar: true
+      repair-material: IRON_INGOT
+      repair-amount: 63  # 25% of max durability
+    allowed-enchantments:
+      - UNBREAKING
+      - MENDING
+    recipe:
+      enabled: true
+      category: EQUIPMENT
+      shape:
+        - "  I"
+        - " I "
+        - "S  "
+      ingredients:
+        I: IRON_INGOT
+        S: STICK
+    features:
+      multiple-facing: true
+      walls: true
+      stairs: true
+      directional: true
+      axis-rotation: true
+      slabs: true
+    # Blocks the File tool will not interact with (right-click passes through)
+    excluded-blocks:
+      # Torches
+      - TORCH
+      - WALL_TORCH
+      - SOUL_TORCH
+      - SOUL_WALL_TORCH
+      - REDSTONE_TORCH
+      - REDSTONE_WALL_TORCH
+      # Doors
+      - OAK_DOOR
+      - SPRUCE_DOOR
+      - BIRCH_DOOR
+      - JUNGLE_DOOR
+      - ACACIA_DOOR
+      - DARK_OAK_DOOR
+      - MANGROVE_DOOR
+      - CHERRY_DOOR
+      - BAMBOO_DOOR
+      - CRIMSON_DOOR
+      - WARPED_DOOR
+      - IRON_DOOR
+      - COPPER_DOOR
+      - EXPOSED_COPPER_DOOR
+      - WEATHERED_COPPER_DOOR
+      - OXIDIZED_COPPER_DOOR
+      - WAXED_COPPER_DOOR
+      - WAXED_EXPOSED_COPPER_DOOR
+      - WAXED_WEATHERED_COPPER_DOOR
+      - WAXED_OXIDIZED_COPPER_DOOR
+      # Trapdoors
+      - OAK_TRAPDOOR
+      - SPRUCE_TRAPDOOR
+      - BIRCH_TRAPDOOR
+      - JUNGLE_TRAPDOOR
+      - ACACIA_TRAPDOOR
+      - DARK_OAK_TRAPDOOR
+      - MANGROVE_TRAPDOOR
+      - CHERRY_TRAPDOOR
+      - BAMBOO_TRAPDOOR
+      - CRIMSON_TRAPDOOR
+      - WARPED_TRAPDOOR
+      - IRON_TRAPDOOR
+      - COPPER_TRAPDOOR
+      - EXPOSED_COPPER_TRAPDOOR
+      - WEATHERED_COPPER_TRAPDOOR
+      - OXIDIZED_COPPER_TRAPDOOR
+      - WAXED_COPPER_TRAPDOOR
+      - WAXED_EXPOSED_COPPER_TRAPDOOR
+      - WAXED_WEATHERED_COPPER_TRAPDOOR
+      - WAXED_OXIDIZED_COPPER_TRAPDOOR
+      # Fence gates
+      - OAK_FENCE_GATE
+      - SPRUCE_FENCE_GATE
+      - BIRCH_FENCE_GATE
+      - JUNGLE_FENCE_GATE
+      - ACACIA_FENCE_GATE
+      - DARK_OAK_FENCE_GATE
+      - MANGROVE_FENCE_GATE
+      - CHERRY_FENCE_GATE
+      - BAMBOO_FENCE_GATE
+      - CRIMSON_FENCE_GATE
+      - WARPED_FENCE_GATE
+      # Vines
+      - VINE
+      - CAVE_VINES
+      - CAVE_VINES_PLANT
+      - TWISTING_VINES
+      - TWISTING_VINES_PLANT
+      - WEEPING_VINES
+      - WEEPING_VINES_PLANT
+      # Mushroom blocks
+      - BROWN_MUSHROOM_BLOCK
+      - RED_MUSHROOM_BLOCK
+      - MUSHROOM_STEM
+      # Portals
+      - NETHER_PORTAL
+      - END_PORTAL
+      - END_GATEWAY
+      # Coral fans
+      - TUBE_CORAL_FAN
+      - TUBE_CORAL_WALL_FAN
+      - BRAIN_CORAL_FAN
+      - BRAIN_CORAL_WALL_FAN
+      - BUBBLE_CORAL_FAN
+      - BUBBLE_CORAL_WALL_FAN
+      - FIRE_CORAL_FAN
+      - FIRE_CORAL_WALL_FAN
+      - HORN_CORAL_FAN
+      - HORN_CORAL_WALL_FAN
+      - DEAD_TUBE_CORAL_FAN
+      - DEAD_TUBE_CORAL_WALL_FAN
+      - DEAD_BRAIN_CORAL_FAN
+      - DEAD_BRAIN_CORAL_WALL_FAN
+      - DEAD_BUBBLE_CORAL_FAN
+      - DEAD_BUBBLE_CORAL_WALL_FAN
+      - DEAD_FIRE_CORAL_FAN
+      - DEAD_FIRE_CORAL_WALL_FAN
+      - DEAD_HORN_CORAL_FAN
+      - DEAD_HORN_CORAL_WALL_FAN
+      # Buttons
+      - OAK_BUTTON
+      - SPRUCE_BUTTON
+      - BIRCH_BUTTON
+      - JUNGLE_BUTTON
+      - ACACIA_BUTTON
+      - DARK_OAK_BUTTON
+      - MANGROVE_BUTTON
+      - CHERRY_BUTTON
+      - BAMBOO_BUTTON
+      - CRIMSON_BUTTON
+      - WARPED_BUTTON
+      - STONE_BUTTON
+      - POLISHED_BLACKSTONE_BUTTON
+      # Pressure plates
+      - OAK_PRESSURE_PLATE
+      - SPRUCE_PRESSURE_PLATE
+      - BIRCH_PRESSURE_PLATE
+      - JUNGLE_PRESSURE_PLATE
+      - ACACIA_PRESSURE_PLATE
+      - DARK_OAK_PRESSURE_PLATE
+      - MANGROVE_PRESSURE_PLATE
+      - CHERRY_PRESSURE_PLATE
+      - BAMBOO_PRESSURE_PLATE
+      - CRIMSON_PRESSURE_PLATE
+      - WARPED_PRESSURE_PLATE
+      - STONE_PRESSURE_PLATE
+      - POLISHED_BLACKSTONE_PRESSURE_PLATE
+      - HEAVY_WEIGHTED_PRESSURE_PLATE
+      - LIGHT_WEIGHTED_PRESSURE_PLATE
+      # Beds
+      - WHITE_BED
+      - ORANGE_BED
+      - MAGENTA_BED
+      - LIGHT_BLUE_BED
+      - YELLOW_BED
+      - LIME_BED
+      - PINK_BED
+      - GRAY_BED
+      - LIGHT_GRAY_BED
+      - CYAN_BED
+      - PURPLE_BED
+      - BLUE_BED
+      - BROWN_BED
+      - GREEN_BED
+      - RED_BED
+      - BLACK_BED
+      # Interactive / special blocks
+      - LEVER
+      - TRIPWIRE_HOOK
+      - TRIPWIRE
+      - END_PORTAL_FRAME
+      - LADDER
+      - GLOW_LICHEN
+      - SCULK_VEIN
+      - SMALL_AMETHYST_BUD
+      - MEDIUM_AMETHYST_BUD
+      - LARGE_AMETHYST_BUD
+      - AMETHYST_CLUSTER
+      - CRAFTING_TABLE
+      - LOOM
+      - GRINDSTONE
+      - STONECUTTER
+      - CARTOGRAPHY_TABLE
+      - SMITHING_TABLE
+      - ANVIL
+      - CHIPPED_ANVIL
+      - DAMAGED_ANVIL
+      - ENCHANTING_TABLE
+      - DRAGON_EGG
+      - BELL
+      - RESPAWN_ANCHOR
+      - TURTLE_EGG
+      - SNIFFER_EGG
+      - FROGSPAWN
+      - CAULDRON
+      - WATER_CAULDRON
+      - LAVA_CAULDRON
+      - POWDER_SNOW_CAULDRON
+      - CAKE
+      # Candle cakes
+      - CANDLE_CAKE
+      - WHITE_CANDLE_CAKE
+      - ORANGE_CANDLE_CAKE
+      - MAGENTA_CANDLE_CAKE
+      - LIGHT_BLUE_CANDLE_CAKE
+      - YELLOW_CANDLE_CAKE
+      - LIME_CANDLE_CAKE
+      - PINK_CANDLE_CAKE
+      - GRAY_CANDLE_CAKE
+      - LIGHT_GRAY_CANDLE_CAKE
+      - CYAN_CANDLE_CAKE
+      - PURPLE_CANDLE_CAKE
+      - BLUE_CANDLE_CAKE
+      - BROWN_CANDLE_CAKE
+      - GREEN_CANDLE_CAKE
+      - RED_CANDLE_CAKE
+      - BLACK_CANDLE_CAKE
+      # Redstone / rails
+      - COMPOSTER
+      - REPEATER
+      - COMPARATOR
+      - RAIL
+      - POWERED_RAIL
+      - DETECTOR_RAIL
+      - ACTIVATOR_RAIL
+
+  trowel:
+    enabled: true
+    # Display name and lore (MiniMessage format)
+    # Placeholders: <tool>, <cur> (damage taken), <max>, <remaining>, <percent>, <feed_source>
+    display:
+      enabled: true
+      name: "Trowel"
+      lore:
+        - "<gray>Feed Source:</gray> <white><feed_source></white>"
+    base-material: WARPED_FUNGUS_ON_A_STICK
+    # Model settings (choose one format):
+    #   Integer (e.g., 1002) -> Vanilla CustomModelData (legacy)
+    #   "model:namespace:key" -> Modern Item Model (1.21.4+, recommended)
+    #   "nexo:id" -> Nexo plugin
+    #   "itemsadder:id" -> ItemsAdder plugin
+    model-id: "nexo:trowel"
+    durability:
+      max: 250
+      use-vanilla-damage-bar: true
+      repair-material: IRON_INGOT
+      repair-amount: 63  # 25% of max durability
+    allowed-enchantments:
+      - UNBREAKING
+      - MENDING
+    recipe:
+      enabled: true
+      category: EQUIPMENT
+      shape:
+        - "  I"
+        - " II"
+        - "S  "
+      ingredients:
+        I: IRON_INGOT
+        S: STICK
+    can-replace:
+      - SHORT_GRASS
+      - TALL_GRASS
+      - FERN
+      - LARGE_FERN
+      - SNOW
+      - DEAD_BUSH
+      - SEAGRASS
+      - TALL_SEAGRASS
+      - KELP
+      - KELP_PLANT
+      - DANDELION
+      - POPPY
+      - BLUE_ORCHID
+      - ALLIUM
+      - AZURE_BLUET
+      - RED_TULIP
+      - ORANGE_TULIP
+      - WHITE_TULIP
+      - PINK_TULIP
+      - OXEYE_DAISY
+      - CORNFLOWER
+      - LILY_OF_THE_VALLEY
+      - SUNFLOWER
+      - LILAC
+      - ROSE_BUSH
+      - PEONY
+    feed-source-names:
+      hotbar: "Hotbar"
+      row-1: "Row 1"
+      row-2: "Row 2"
+      row-3: "Row 3"
+    sounds:
+      feed-source-switch: ui.button.click
+
+  wand:
+    enabled: true
+    # Display name and lore (MiniMessage format)
+    # Placeholders: <tool>, <cur> (damage taken), <max>, <remaining>, <percent>, <wand_mode>
+    display:
+      enabled: true
+      name: "Builder's Wand"
+      lore:
+        - "<gray>Mode:</gray> <white><wand_mode></white>"
+    base-material: WARPED_FUNGUS_ON_A_STICK
+    # Model settings (choose one format):
+    #   Integer (e.g., 1003) -> Vanilla CustomModelData (legacy)
+    #   "model:namespace:key" -> Modern Item Model (1.21.4+, recommended)
+    #   "nexo:id" -> Nexo plugin
+    #   "itemsadder:id" -> ItemsAdder plugin
+    model-id: "nexo:wand"
+    durability:
+      max: 250
+      use-vanilla-damage-bar: true
+      repair-material: IRON_INGOT
+      repair-amount: 63  # 25% of max durability
+    allowed-enchantments:
+      - UNBREAKING
+      - MENDING
+    recipe:
+      enabled: true
+      category: EQUIPMENT
+      shape:
+        - " II"
+        - " SI"
+        - "S  "
+      ingredients:
+        I: IRON_INGOT
+        S: STICK
+    max-blocks: 64
+    offhand-override: true
+    undo:
+      enabled: true
+      max-history: 5
+      expire-seconds: 300
+    preview:
+      enabled: true
+      interval-ticks: 5
+      # Glow outline color (scoreboard team colors):
+      # black, dark_blue, dark_green, dark_aqua, dark_red, dark_purple,
+      # gold, gray, dark_gray, blue, green, aqua, red, light_purple, yellow, white
+      glow-color: YELLOW
+    mode-names:
+      face: "Face"
+      line: "Line"
+    sounds:
+      mode-switch: ui.button.click
+
+  # ============================================================
+  # HARVESTING TOOLS
+  # ============================================================
+  # Harvesting tools activate on block break (not right-click).
+  # Sneak while breaking to mine a single block without activating.
+  # Drops go directly to inventory; overflow to OakOverflow if installed.
+  excavator:
+    enabled: true
+    # Display name and lore (MiniMessage format)
+    # Placeholders: <tool>, <cur> (damage taken), <max>, <remaining>, <percent>
+    display:
+      enabled: true
+      name: "<white>Excavation Shovel</white>"
+      lore: []
+    base-material: STONE_SHOVEL
+    # Mining speed override (wood=2, stone=4, iron=6, diamond=8, netherite=9)
+    # Set to 0 to use the base material's natural speed
+    mining-speed: 4.0
+    # Harvest level determines what blocks drop items (wood, stone, iron, diamond, netherite)
+    # Set to "none" to use the base material's natural harvest level
+    harvest-level: diamond
+    model-id: ""
+    durability:
+      max: 500
+      use-vanilla-damage-bar: true
+      # Set to NONE to disable anvil repair
+      repair-material: NONE
+      repair-amount: 0
+      # Set to true for infinite durability (no damage taken)
+      unbreakable: false
+    # Locked tool — no enchantments allowed (empty list blocks all)
+    allowed-enchantments: []
+    recipe:
+      enabled: false
+      category: EQUIPMENT
+      shape:
+        - " D "
+        - " S "
+        - " S "
+      ingredients:
+        D: DIAMOND
+        S: STICK
+    # Grid size (3 = 3x3, 5 = 5x5, etc. — must be odd)
+    grid-size: 3
+    # Ticks between each block break in the animation (1 = fastest)
+    break-speed-ticks: 1
+    # Show progress/completion action bar messages
+    show-progress: true
+
+  lumberjack:
+    enabled: true
+    display:
+      enabled: true
+      name: "<white>Lumberjack's Axe</white>"
+      lore: []
+    base-material: STONE_AXE
+    mining-speed: 4.0
+    harvest-level: diamond
+    model-id: ""
+    durability:
+      max: 1000
+      use-vanilla-damage-bar: true
+      repair-material: NONE
+      repair-amount: 0
+      unbreakable: false
+    allowed-enchantments: []
+    recipe:
+      enabled: false
+      category: EQUIPMENT
+      shape:
+        - "DD "
+        - "DS "
+        - " S "
+      ingredients:
+        D: DIAMOND
+        S: STICK
+    max-blocks: 64
+    break-speed-ticks: 1
+    # Show progress/completion action bar messages
+    show-progress: true
+    # Minimum natural leaves nearby to qualify as a generated tree
+    min-leaves: 5
+
+  vein-miner:
+    enabled: true
+    display:
+      enabled: true
+      name: "<white>Vein Miner Pickaxe</white>"
+      lore: []
+    base-material: STONE_PICKAXE
+    mining-speed: 4.0
+    harvest-level: diamond
+    model-id: ""
+    durability:
+      max: 750
+      use-vanilla-damage-bar: true
+      repair-material: NONE
+      repair-amount: 0
+      unbreakable: false
+    allowed-enchantments: []
+    recipe:
+      enabled: false
+      category: EQUIPMENT
+      shape:
+        - "DDD"
+        - " S "
+        - " S "
+      ingredients:
+        D: DIAMOND
+        S: STICK
+    max-blocks: 32
+    break-speed-ticks: 1
+    # Show progress/completion action bar messages
+    show-progress: true
+    # Treat deepslate ore variants as the same vein (e.g. iron_ore + deepslate_iron_ore)
+    group-deepslate: true
+
+  # ============================================================
+  # SICKLE — Crop Harvesting Tool
+  # ============================================================
+  # Vanilla-feel tiered tool. Harvests mature crops in an area and replants.
+  # Uses vanilla durability, enchanting, repair — fully craftable.
+  sickle:
+    enabled: true
+    # Vegetation types the sickle clears in an area (non-crop blocks)
+    clearable-vegetation:
+      - SHORT_GRASS
+      - TALL_GRASS
+      - FERN
+      - LARGE_FERN
+      - DEAD_BUSH
+      - BUSH
+      - DANDELION
+      - POPPY
+      - BLUE_ORCHID
+      - ALLIUM
+      - AZURE_BLUET
+      - RED_TULIP
+      - ORANGE_TULIP
+      - WHITE_TULIP
+      - PINK_TULIP
+      - OXEYE_DAISY
+      - CORNFLOWER
+      - LILY_OF_THE_VALLEY
+      - TORCHFLOWER
+      - WITHER_ROSE
+      - SUNFLOWER
+      - LILAC
+      - ROSE_BUSH
+      - PEONY
+    tiers:
+      wooden:
+        display-name: "Wooden Sickle"
+        model-id: "nexo:wooden_sickle"
+        radius: 0
+        recipe:
+          enabled: true
+          category: EQUIPMENT
+          shape:
+            - " PP"
+            - "  P"
+            - " S "
+          ingredients:
+            P: "#planks"
+            S: STICK
+      stone:
+        display-name: "Stone Sickle"
+        model-id: "nexo:stone_sickle"
+        radius: 1
+        recipe:
+          enabled: true
+          category: EQUIPMENT
+          shape:
+            - " CC"
+            - "  C"
+            - " S "
+          ingredients:
+            C: COBBLESTONE
+            S: STICK
+      iron:
+        display-name: "Iron Sickle"
+        model-id: "nexo:iron_sickle"
+        radius: 2
+        recipe:
+          enabled: true
+          category: EQUIPMENT
+          shape:
+            - " II"
+            - "  I"
+            - " S "
+          ingredients:
+            I: IRON_INGOT
+            S: STICK
+      gold:
+        display-name: "Golden Sickle"
+        model-id: "nexo:golden_sickle"
+        radius: 5
+        recipe:
+          enabled: true
+          category: EQUIPMENT
+          shape:
+            - " GG"
+            - "  G"
+            - " S "
+          ingredients:
+            G: GOLD_INGOT
+            S: STICK
+      diamond:
+        display-name: "Diamond Sickle"
+        model-id: "nexo:diamond_sickle"
+        radius: 3
+        recipe:
+          enabled: true
+          category: EQUIPMENT
+          shape:
+            - " DD"
+            - "  D"
+            - " S "
+          ingredients:
+            D: DIAMOND
+            S: STICK
+      netherite:
+        display-name: "Netherite Sickle"
+        model-id: "nexo:netherite_sickle"
+        radius: 4
+
+# ============================================================
+# INTEGRATION SETTINGS
+# ============================================================
+# Protection plugins (WorldGuard, GriefPrevention, Towny, etc.) are detected automatically.
+# Grant oaktools.bypass.protection to allow tool use in protected regions.
+integration:
+  coreprotect:
+    enabled: true
+    log-file-changes: true
+    log-trowel-placements: true
+    log-wand-placements: true
+    log-harvesting-breaks: true
+
+# ============================================================
+# MESSAGES
+# ============================================================
+# MiniMessage format: https://docs.advntr.dev/minimessage/format.html
+# Placeholders:
+#   <player> - Player name        <tool> - Tool type name
+#   <feed_source> - Feed source    <value> - Numeric value
+#   <remaining> - Remaining uses   <max> - Max durability
+# Set text to "" or command message to "" to disable individual messages
+messages:
+  # Tool usage messages
+  protection-denied:
+    text: "<#C27B6B>You cannot build here."
+    display: action_bar
+  no-placeable-blocks:
+    text: "<#D89B6A>No placeable blocks in <#FCD472><feed_source><#D89B6A>."
+    display: action_bar
+  feed-source-changed:
+    text: "<#f2ebd7>Feed source: <#FCD472><feed_source>"
+    display: action_bar
+  wand-placed:
+    text: "<#8FAA87>Placed <#FCD472><count><#8FAA87> blocks."
+    display: action_bar
+  wand-mode-changed:
+    text: "<#f2ebd7>Mode: <#FCD472><wand_mode>"
+    display: action_bar
+  wand-undo:
+    text: "<#D89B6A>Undid <#FCD472><count><#D89B6A> blocks."
+    display: action_bar
+  wand-undo-empty:
+    text: "<#C27B6B>Nothing to undo."
+    display: action_bar
+  gamemode-denied:
+    text: "<#C27B6B>Tools cannot be used in this gamemode."
+    display: action_bar
+  world-denied:
+    text: "<#C27B6B>Tools cannot be used in this world."
+    display: action_bar
+  no-permission:
+    text: "<#C27B6B>You don't have permission to use this tool."
+    display: action_bar
+  craft-denied:
+    text: "<#C27B6B>You don't have permission to craft this tool."
+    display: action_bar
+  tool-broken:
+    text: "<#C27B6B>Your <#FCD472><tool><#C27B6B> has broken!"
+    display: action_bar
+  tool-low-durability:
+    text: "<#D89B6A>Your <#FCD472><tool><#D89B6A> is low on durability! <#FCD472><remaining><#D89B6A>/<#FCD472><max><#D89B6A> remaining."
+    display: action_bar
+  # Harvesting tool messages
+  excavator-breaking:
+    text: "<#8FAA87>Excavating... <#FCD472><count><#8FAA87>/<#FCD472><total>"
+    display: action_bar
+  excavator-complete:
+    text: "<#8FAA87>Excavated <#FCD472><count><#8FAA87> blocks."
+    display: action_bar
+  lumberjack-breaking:
+    text: "<#8FAA87>Chopping... <#FCD472><count><#8FAA87>/<#FCD472><total>"
+    display: action_bar
+  lumberjack-complete:
+    text: "<#8FAA87>Chopped <#FCD472><count><#8FAA87> blocks."
+    display: action_bar
+  veinminer-breaking:
+    text: "<#8FAA87>Mining... <#FCD472><count><#8FAA87>/<#FCD472><total>"
+    display: action_bar
+  veinminer-complete:
+    text: "<#8FAA87>Mined <#FCD472><count><#8FAA87> blocks."
+    display: action_bar
+  not-a-tree:
+    text: "<#D89B6A>That doesn't appear to be a natural tree."
+    display: action_bar
+  no-ore-vein:
+    text: "<#D89B6A>No connected ore vein found."
+    display: action_bar
+  operation-cancelled:
+    text: "<#D89B6A>Mining operation cancelled."
+    display: action_bar
+  inventory-overflow:
+    text: "<#D89B6A><count> items sent to overflow storage."
+    display: action_bar
+  sickle-harvested:
+    text: "<#8FAA87>Harvested <#FCD472><count><#8FAA87> crops."
+    display: action_bar
+  sickle-no-crops:
+    text: "<#D89B6A>No mature crops nearby."
+    display: action_bar
+
+  # Command messages (always delivered via chat)
+  commands:
+    no-permission: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>You don't have permission to use this command."
+    unknown-subcommand: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Unknown subcommand. Use /oaktools help for usage."
+    help:
+      header: "<#6C757D>[<#6B7A5E>ᴛᴏᴏʟꜱ<#6C757D>] <#FCD472>OakTools Commands"
+      give: "<#f2ebd7>  /oaktools give <#FCD472><player> <tool> [durability]"
+      reload: "<#f2ebd7>  /oaktools reload"
+      info: "<#f2ebd7>  /oaktools info <#FCD472>[player]"
+      repair: "<#f2ebd7>  /oaktools repair <#FCD472>[player]"
+    give:
+      usage: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Usage: /oaktools give <player> <tool> [durability]"
+      player-not-found: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Player not found: <#FCD472><player>"
+      invalid-tool: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Invalid tool type. Valid types: file, trowel, wand, excavator, lumberjack, vein-miner"
+      invalid-durability: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Invalid durability value: <#FCD472><value>"
+      success-sender: "<#6C757D>[<#6B7A5E>ᴛᴏᴏʟꜱ<#6C757D>] <#f2ebd7>Gave <#FCD472><tool><#f2ebd7> to <#FCD472><player><#f2ebd7>."
+      success-target: "<#6C757D>[<#6B7A5E>ᴛᴏᴏʟꜱ<#6C757D>] <#8FAA87>You received a <#FCD472><tool><#8FAA87>!"
+    info:
+      player-not-found: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Player not found: <#FCD472><player>"
+      must-specify-player: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>You must specify a player when using this command from console."
+      not-holding-tool: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B><player> is not holding an OakTools tool."
+      header: "<#6C757D>[<#6B7A5E>ᴛᴏᴏʟꜱ<#6C757D>] <#FCD472>Tool Info"
+      player: "<#f2ebd7>  Player: <#FCD472><player>"
+      tool-type: "<#f2ebd7>  Tool Type: <#FCD472><tool>"
+      durability: "<#f2ebd7>  Durability: <#FCD472><remaining><#f2ebd7> / <#FCD472><max>"
+      feed-source: "<#f2ebd7>  Feed Source: <#FCD472><feed_source>"
+    repair:
+      player-not-found: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Player not found: <#FCD472><player>"
+      must-specify-player: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>You must specify a player when using this command from console."
+      not-holding-tool: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B><player> is not holding an OakTools tool."
+      success-sender: "<#6C757D>[<#6B7A5E>ᴛᴏᴏʟꜱ<#6C757D>] <#8FAA87>Repaired <#FCD472><player><#8FAA87>'s tool to full durability."
+      success-target: "<#6C757D>[<#6B7A5E>ᴛᴏᴏʟꜱ<#6C757D>] <#8FAA87>Your tool has been repaired!"
+    reload:
+      reloading: "<#6C757D>[<#6B7A5E>ᴛᴏᴏʟꜱ<#6C757D>] <#D89B6A>Reloading OakTools configuration..."
+      failed: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Failed to reload configuration. Check console for errors."
+      success: "<#6C757D>[<#6B7A5E>ᴛᴏᴏʟꜱ<#6C757D>] <#8FAA87>Configuration and recipes reloaded successfully!"
+
+# ============================================================
+# METRICS (bStats)
+# ============================================================
+metrics:
+  enabled: true
+
+# ============================================================
+#                    DO NOT EDIT BELOW
+# ============================================================
+config-version: 1

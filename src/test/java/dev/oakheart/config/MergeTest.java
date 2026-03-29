@@ -1,0 +1,263 @@
+package dev.oakheart.config;
+
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/**
+ * Tests for YamlMerger — merging defaults into user configs.
+ */
+class MergeTest {
+
+    @Test
+    void mergeAddsMissingScalar() {
+        OakheartConfig user = OakheartConfig.fromString("""
+                name: MyPlugin
+                debug: false
+                """);
+        OakheartConfig defaults = OakheartConfig.fromString("""
+                name: MyPlugin
+                debug: false
+                version: 1
+                """);
+
+        boolean changed = user.mergeDefaults(defaults);
+
+        assertTrue(changed);
+        assertEquals(1, user.getInt("version"));
+        // Existing values unchanged
+        assertEquals("MyPlugin", user.getString("name"));
+        assertFalse(user.getBoolean("debug"));
+    }
+
+    @Test
+    void mergePreservesUserValues() {
+        OakheartConfig user = OakheartConfig.fromString("""
+                cooldown: 30
+                """);
+        OakheartConfig defaults = OakheartConfig.fromString("""
+                cooldown: 60
+                """);
+
+        boolean changed = user.mergeDefaults(defaults);
+
+        assertFalse(changed);
+        assertEquals(30, user.getInt("cooldown")); // User value preserved
+    }
+
+    @Test
+    void mergeAddsNestedKey() {
+        OakheartConfig user = OakheartConfig.fromString("""
+                settings:
+                  debug: false
+                """);
+        OakheartConfig defaults = OakheartConfig.fromString("""
+                settings:
+                  debug: false
+                  verbose: true
+                """);
+
+        boolean changed = user.mergeDefaults(defaults);
+
+        assertTrue(changed);
+        assertTrue(user.getBoolean("settings.verbose"));
+        assertFalse(user.getBoolean("settings.debug")); // User value preserved
+    }
+
+    @Test
+    void mergeAddsEntireSection() {
+        OakheartConfig user = OakheartConfig.fromString("""
+                name: Test
+                """);
+        OakheartConfig defaults = OakheartConfig.fromString("""
+                name: Test
+                database:
+                  type: sqlite
+                  path: data.db
+                """);
+
+        boolean changed = user.mergeDefaults(defaults);
+
+        assertTrue(changed);
+        assertTrue(user.isSection("database"));
+        assertEquals("sqlite", user.getString("database.type"));
+        assertEquals("data.db", user.getString("database.path"));
+    }
+
+    @Test
+    void mergePreservesComments() {
+        OakheartConfig user = OakheartConfig.fromString("""
+                # User's custom comment
+                name: MyServer
+                """);
+        OakheartConfig defaults = OakheartConfig.fromString("""
+                name: Default
+                # Port setting
+                port: 8080
+                """);
+
+        user.mergeDefaults(defaults);
+
+        String output = user.getDocument().serialize();
+        assertTrue(output.contains("# User's custom comment"));
+        assertTrue(output.contains("name: MyServer")); // User value preserved
+        assertTrue(output.contains("# Port setting"));
+        assertTrue(output.contains("port: 8080"));
+    }
+
+    @Test
+    void mergeInsertsAtCorrectPosition() {
+        OakheartConfig user = OakheartConfig.fromString("""
+                a: 1
+                c: 3
+                """);
+        OakheartConfig defaults = OakheartConfig.fromString("""
+                a: 1
+                b: 2
+                c: 3
+                """);
+
+        user.mergeDefaults(defaults);
+
+        assertEquals(2, user.getInt("b"));
+
+        // Verify b appears between a and c
+        String output = user.getDocument().serialize();
+        int posA = output.indexOf("a: 1");
+        int posB = output.indexOf("b: 2");
+        int posC = output.indexOf("c: 3");
+        assertTrue(posA < posB, "b should come after a");
+        assertTrue(posB < posC, "b should come before c");
+    }
+
+    @Test
+    void mergeAddsMissingList() {
+        OakheartConfig user = OakheartConfig.fromString("""
+                name: Test
+                """);
+        OakheartConfig defaults = OakheartConfig.fromString("""
+                name: Test
+                items:
+                  - apple
+                  - banana
+                """);
+
+        user.mergeDefaults(defaults);
+
+        List<String> items = user.getStringList("items");
+        assertTrue(items.contains("apple"));
+        assertTrue(items.contains("banana"));
+    }
+
+    @Test
+    void hasNewKeysDetectsMissing() {
+        OakheartConfig user = OakheartConfig.fromString("""
+                a: 1
+                """);
+        OakheartConfig defaults = OakheartConfig.fromString("""
+                a: 1
+                b: 2
+                """);
+
+        assertTrue(user.hasNewKeys(defaults));
+    }
+
+    @Test
+    void hasNewKeysReturnsFalseWhenComplete() {
+        OakheartConfig user = OakheartConfig.fromString("""
+                a: 1
+                b: 2
+                """);
+        OakheartConfig defaults = OakheartConfig.fromString("""
+                a: 1
+                b: 2
+                """);
+
+        assertFalse(user.hasNewKeys(defaults));
+    }
+
+    @Test
+    void mergeSkipsUserCustomizedSections() {
+        // User has replaced default pet entries with their own
+        OakheartConfig user = OakheartConfig.fromString("""
+                pets:
+                  my_custom_pet:
+                    display: CustomPet
+                  another_pet:
+                    display: Another
+                """);
+        OakheartConfig defaults = OakheartConfig.fromString("""
+                pets:
+                  zombie_pet:
+                    display: ZombiePet
+                  skeleton_pet:
+                    display: SkeletonPet
+                """);
+
+        boolean changed = user.mergeDefaults(defaults);
+
+        // Should NOT inject zombie_pet or skeleton_pet — user replaced the section
+        assertFalse(changed);
+        assertFalse(user.contains("pets.zombie_pet"));
+        assertFalse(user.contains("pets.skeleton_pet"));
+        assertTrue(user.contains("pets.my_custom_pet"));
+    }
+
+    @Test
+    void mergeHandlesMultipleMissingKeys() {
+        OakheartConfig user = OakheartConfig.fromString("""
+                a: 1
+                """);
+        OakheartConfig defaults = OakheartConfig.fromString("""
+                a: 1
+                b: 2
+                c: 3
+                d: 4
+                """);
+
+        user.mergeDefaults(defaults);
+
+        assertEquals(2, user.getInt("b"));
+        assertEquals(3, user.getInt("c"));
+        assertEquals(4, user.getInt("d"));
+    }
+
+    @Test
+    void mergePreservesOriginalFormatting() {
+        String userYaml = """
+                # ============================================================
+                # MY PLUGIN CONFIG
+                # ============================================================
+
+                name: MyPlugin
+
+                # ============================================================
+                # SETTINGS
+                # ============================================================
+                settings:
+                  debug: false""";
+
+        OakheartConfig user = OakheartConfig.fromString(userYaml);
+        OakheartConfig defaults = OakheartConfig.fromString("""
+                name: DefaultName
+                settings:
+                  debug: false
+                  verbose: true
+                """);
+
+        user.mergeDefaults(defaults);
+
+        String output = user.getDocument().serialize();
+        // Original comments preserved
+        assertTrue(output.contains("# ============================================================"));
+        assertTrue(output.contains("# MY PLUGIN CONFIG"));
+        assertTrue(output.contains("# SETTINGS"));
+        // User values preserved
+        assertTrue(output.contains("name: MyPlugin"));
+        assertFalse(output.contains("name: DefaultName"));
+        // New key added
+        assertTrue(output.contains("verbose: true"));
+    }
+}

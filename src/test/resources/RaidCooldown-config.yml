@@ -1,0 +1,101 @@
+# ============================================================
+# RaidCooldown
+# Adds configurable cooldowns to raids with persistent storage.
+# ============================================================
+
+# ============================================================
+# GENERAL SETTINGS
+# ============================================================
+raid-cooldown-seconds: 86400
+
+settings:
+  auto-cleanup: true
+  cleanup-interval-minutes: 10
+  log-cooldown-actions: true
+
+# ============================================================
+# SYNCHRONIZED RESET
+# ============================================================
+# When enabled, all cooldowns reset at a fixed time each day
+# instead of being relative to when each player triggered their raid.
+# Example: If reset-time is "00:00", all cooldowns expire at midnight.
+# Note: When enabled, raid-cooldown-seconds is ignored.
+synchronized-reset:
+  enabled: true
+  # 24-hour format (e.g. "00:00", "06:00", "18:30")
+  reset-time: "00:00"
+
+# ============================================================
+# PLACEHOLDERAPI
+# ============================================================
+# Requires PlaceholderAPI plugin to be installed
+#   %raidcooldown_time%    - Formatted time remaining or ready message
+#   %raidcooldown_ready%   - "true" if player can raid, "false" if on cooldown
+#   %raidcooldown_seconds% - Raw seconds remaining (0 if ready)
+placeholderapi:
+  ready-message: "Ready"
+
+# ============================================================
+# MESSAGES
+# ============================================================
+# MiniMessage format: https://docs.advntr.dev/minimessage/format.html
+# Placeholders: <player> - Player name, <time> - Formatted time,
+#   <count> - Active cooldowns, <duration> - Duration in hours,
+#   <error> - Error details, <valid> - Config validation status
+# Set text to "" to disable individual messages
+# Display modes: chat, action_bar
+messages:
+  # Time format suffixes
+  time-format:
+    hour: "h "
+    minute: "m "
+    second: "s"
+  # Raid cooldown messages
+  raid-blocked:
+    text: "<#6C757D>[<#6B7A5E>ʀᴀɪᴅ<#6C757D>] <#D89B6A>You are on cooldown. Please wait <#FCD472><time><#D89B6A>."
+    display: action_bar
+  cooldown-remaining:
+    text: "<#6C757D>[<#6B7A5E>ʀᴀɪᴅ<#6C757D>] <#f2ebd7>You must wait <#FCD472><time><#f2ebd7> before starting another raid."
+    display: chat
+  cooldown-remaining-other:
+    text: "<#6C757D>[<#6B7A5E>ʀᴀɪᴅ<#6C757D>] <#f2ebd7><#FCD472><player><#f2ebd7> must wait <#FCD472><time><#f2ebd7> before starting another raid."
+    display: chat
+  raid-available:
+    text: "<#6C757D>[<#6B7A5E>ʀᴀɪᴅ<#6C757D>] <#8FAA87>You can start a raid now!"
+    display: chat
+  raid-available-other:
+    text: "<#6C757D>[<#6B7A5E>ʀᴀɪᴅ<#6C757D>] <#8FAA87><player> can start a raid now!"
+    display: chat
+  # Admin messages
+  cooldown-reset:
+    text: "<#6C757D>[<#6B7A5E>ʀᴀɪᴅ<#6C757D>] <#8FAA87>Raid cooldown for <#FCD472><player><#8FAA87> has been reset."
+    display: chat
+  cooldown-reset-notification:
+    text: "<#6C757D>[<#6B7A5E>ʀᴀɪᴅ<#6C757D>] <#f2ebd7>Your raid cooldown has been reset by an administrator."
+    display: chat
+  reload-success:
+    text: "<#6C757D>[<#6B7A5E>ʀᴀɪᴅ<#6C757D>] <#8FAA87>Configuration reloaded."
+    display: chat
+  reload-error:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Error reloading configuration: <#FCD472><error><#C27B6B>."
+    display: chat
+  # Error messages
+  only-players:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Only players can use this command."
+    display: chat
+  player-not-found:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Player '<#FCD472><player><#C27B6B>' not found."
+    display: chat
+  # Info command
+  info-header:
+    text: "<#6C757D>[<#6B7A5E>ʀᴀɪᴅ<#6C757D>] <#FCD472>===== RaidCooldown Info ====="
+    display: chat
+  info-active-cooldowns:
+    text: "<#6C757D>[<#6B7A5E>ʀᴀɪᴅ<#6C757D>] <#f2ebd7>Active cooldowns: <#FCD472><count>"
+    display: chat
+  info-cooldown-duration:
+    text: "<#6C757D>[<#6B7A5E>ʀᴀɪᴅ<#6C757D>] <#f2ebd7>Cooldown duration: <#FCD472><duration><#f2ebd7> hours"
+    display: chat
+  info-config-valid:
+    text: "<#6C757D>[<#6B7A5E>ʀᴀɪᴅ<#6C757D>] <#f2ebd7>Config valid: <#8FAA87><valid>"
+    display: chat

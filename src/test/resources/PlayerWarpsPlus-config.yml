@@ -1,0 +1,157 @@
+# ========================================
+#         PlayerWarpsPlus Config
+# ========================================
+#
+# Modern countdown system for PlayerWarps
+# with MiniMessage formatting support
+#
+# IMPORTANT: Remove wait-commands from
+# PlayerWarps config to avoid conflicts!
+#
+# ========================================
+
+# ========================================
+# MiniMessage Formatting
+# ========================================
+#
+# This plugin uses MiniMessage for all text formatting
+# Documentation: https://docs.advntr.dev/minimessage/format.html
+#
+# Color Examples:
+#   <red>text</red>
+#   <#f9e59d>hex color</#f9e59d>
+#   <gradient:red:blue>gradient text</gradient>
+#
+# Formatting Examples:
+#   <bold>text</bold>
+#   <italic>text</italic>
+#   <underlined>text</underlined>
+#
+# Placeholders:
+#   {warp} or {warp_display} - Warp name
+#   {seconds} - Seconds remaining (countdown only)
+#
+# Custom Tags:
+#   <smallcaps>text</smallcaps> - Converts to small caps (ᴛᴇxᴛ)
+#   <sc>text</sc> - Short alias for smallcaps
+#   Nesting works: <sc><bold>text</bold></sc> applies both bold and small caps
+#
+# ========================================
+
+countdown:
+  # ========================================
+  # General Countdown Settings
+  # ========================================
+
+  # Duration in seconds (how long to show 3, 2, 1)
+  # IMPORTANT: Set PlayerWarps teleport-wait to -1 - we handle all timing
+  duration: 3
+
+  # ========================================
+  # Countdown Messages (3, 2, 1)
+  # ========================================
+
+  title: "<#f9e59d>ᴡᴀʀᴘɪɴɢ ɪɴ {seconds}"
+  subtitle: "<white>ᴅᴏ ɴᴏᴛ ᴍᴏᴠᴇ"
+
+  # ========================================
+  # Final Message (at teleport)
+  # ========================================
+
+  final-title: "<#7f91fd>ᴡᴀʀᴘɪɴɢ ᴛᴏ"
+
+  # Using built-in small caps tag
+  final-subtitle: "<white><sc>{warp}</sc>"
+
+  # ========================================
+  # Cancelled Message (when player moves)
+  # ========================================
+
+  cancelled-title: "<red>ᴄᴀɴᴄᴇʟʟᴇᴅ"
+  cancelled-subtitle: ""
+
+  # ========================================
+  # Title Timing (in ticks, 20 = 1 second)
+  # ========================================
+
+  title-timing:
+    fade-in: 0
+    stay: 30
+    fade-out: 0
+
+  # Final message uses different timing
+  final-title-timing:
+    fade-in: 10
+    stay: 40
+    fade-out: 10
+
+  # ========================================
+  # Sound Effects
+  # ========================================
+
+  sound:
+    enabled: true
+    type: "block.amethyst_block.break"
+    volume: 1.0
+
+    # Pitch for each countdown second (add more entries if duration > 3)
+    # e.g. for duration: 5, add pitch-5 and pitch-4
+    pitch-3: 1.0
+    pitch-2: 0.9
+    pitch-1: 0.8
+
+  # Sound played just before teleport (at original location)
+  final-sound:
+    enabled: true
+    type: "block.respawn_anchor.deplete"
+    volume: 1.0
+    pitch: 1.0
+
+  # Sound played after arriving at destination (optional)
+  arrival-sound:
+    enabled: false
+    type: "entity.enderman.teleport"
+    volume: 1.0
+    pitch: 1.0
+
+  # ========================================
+  # Transition Effects
+  # ========================================
+
+  # Zoom effect
+  # When countdown hits 0, player mounts invisible bat that flies backwards
+  # Combined with speed effect to widen FOV, creates a "zoom out" effect
+  zoom-duration: 5            # How long the zoom effect lasts (ticks)
+  zoom-speed-amplifier: 4     # Speed potion level (0-10, higher = wider FOV)
+
+  # Black screen duration after zoom
+  black-duration: 15   # How long black screen shows before teleport (ticks)
+
+  # Blindness effect during transition
+  blindness:
+    enabled: true
+    duration: 4  # seconds (lingers after teleport)
+    amplifier: 0
+
+  # Darkness effect for smoother black screen transition (1.19+)
+  darkness:
+    enabled: true
+    duration: 4  # seconds (lingers after teleport)
+    amplifier: 0
+
+# ========================================
+# Advanced
+# ========================================
+
+# The PlayerWarps command to use for teleporting
+# Change this if you've customized the /pw command alias in PlayerWarps
+# Examples: "pw", "warp", "warps", "pwarp"
+warp-command: "pw"
+
+# Bat cleanup interval in ticks (how often to check for orphaned bats)
+# This is a safety mechanism - bats are normally cleaned up immediately
+# 100 ticks = 5 seconds (recommended range: 20-200 ticks)
+bat-cleanup-interval: 100
+
+# Show debug messages in console
+debug: false

@@ -1,0 +1,54 @@
+# ============================================================
+# OAKHEARTWEB SETTINGS
+# ============================================================
+
+# Port for the REST API server
+port: 4851
+
+# Shared secret for API authentication
+# The website must send this as: Authorization: Bearer <api-key>
+# Leave empty to auto-generate on first startup
+api-key: ''
+
+# Bind address (0.0.0.0 for all interfaces, 127.0.0.1 for local only)
+bind-address: '0.0.0.0'
+
+# ============================================================
+# STAFF TRACKING
+# ============================================================
+
+staff:
+  # LuckPerms track name — all groups in this track are treated as staff ranks
+  track: 'staff'
+  # Additional staff groups not in the track (e.g. owner rank outside the promotion track)
+  extra-groups:
+    - 'owner'
+
+# ============================================================
+# ECONOMY
+# ============================================================
+
+economy:
+  # Discord webhook URL for trade anomaly alerts (leave empty to disable)
+  discord-webhook: ''
+  # Anomaly threshold: alert when single trade volume exceeds this multiplier of average
+  anomaly-threshold: 3
+
+# ============================================================
+# METRICS
+# ============================================================
+
+metrics:
+  enabled: true
+
+# ============================================================
+# MESSAGES
+# ============================================================
+
+# https://docs.advntr.dev/minimessage/format.html
+# Set text to "" to disable individual messages
+messages:
+  # Command messages (flat strings, always chat)
+  commands:
+    reload-success: "<#6C757D>[<#6B7A5E>ᴡᴇʙ<#6C757D>] <#8FAA87>Configuration reloaded!"
+    reload-failed: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Configuration reload failed. Check console."

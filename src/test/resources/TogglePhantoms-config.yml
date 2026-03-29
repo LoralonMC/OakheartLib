@@ -1,0 +1,81 @@
+# ============================================================
+# TogglePhantoms
+# Allows players to toggle phantom spawning for themselves.
+# ============================================================
+
+# ============================================================
+# STORAGE SETTINGS
+# ============================================================
+# Storage type: yaml, sqlite, or mysql
+storage:
+  type: sqlite
+  # MySQL settings (only used if type is mysql)
+  mysql:
+    host: localhost
+    port: 3306
+    database: minecraft
+    username: root
+    password: ""
+
+# ============================================================
+# MESSAGES
+# ============================================================
+# MiniMessage format: https://docs.advntr.dev/minimessage/format.html
+# Placeholders: <player> - Target player name (in admin messages)
+# Set text to "" to disable individual messages
+# Display modes: chat, action_bar
+messages:
+  # Self toggle messages
+  phantoms-enabled:
+    text: "<#6C757D>[<#6B7A5E>ᴘʜᴀɴᴛᴏᴍꜱ<#6C757D>] <#f2ebd7>Phantom spawning has been <#8FAA87>enabled<#f2ebd7>."
+    display: chat
+  phantoms-disabled:
+    text: "<#6C757D>[<#6B7A5E>ᴘʜᴀɴᴛᴏᴍꜱ<#6C757D>] <#f2ebd7>Phantom spawning has been <#C27B6B>disabled<#f2ebd7>."
+    display: chat
+  # Self status messages
+  status-enabled:
+    text: "<#6C757D>[<#6B7A5E>ᴘʜᴀɴᴛᴏᴍꜱ<#6C757D>] <#f2ebd7>Phantom spawning is currently <#8FAA87>enabled<#f2ebd7>."
+    display: chat
+  status-disabled:
+    text: "<#6C757D>[<#6B7A5E>ᴘʜᴀɴᴛᴏᴍꜱ<#6C757D>] <#f2ebd7>Phantom spawning is currently <#C27B6B>disabled<#f2ebd7>."
+    display: chat
+  # Admin messages (<player> = target player name)
+  admin-phantoms-enabled:
+    text: "<#6C757D>[<#6B7A5E>ᴘʜᴀɴᴛᴏᴍꜱ<#6C757D>] <#f2ebd7>Phantom spawning has been <#8FAA87>enabled<#f2ebd7> for <#FCD472><player><#f2ebd7>."
+    display: chat
+  admin-phantoms-disabled:
+    text: "<#6C757D>[<#6B7A5E>ᴘʜᴀɴᴛᴏᴍꜱ<#6C757D>] <#f2ebd7>Phantom spawning has been <#C27B6B>disabled<#f2ebd7> for <#FCD472><player><#f2ebd7>."
+    display: chat
+  admin-status-enabled:
+    text: "<#6C757D>[<#6B7A5E>ᴘʜᴀɴᴛᴏᴍꜱ<#6C757D>] <#f2ebd7>Phantom spawning is <#8FAA87>enabled<#f2ebd7> for <#FCD472><player><#f2ebd7>."
+    display: chat
+  admin-status-disabled:
+    text: "<#6C757D>[<#6B7A5E>ᴘʜᴀɴᴛᴏᴍꜱ<#6C757D>] <#f2ebd7>Phantom spawning is <#C27B6B>disabled<#f2ebd7> for <#FCD472><player><#f2ebd7>."
+    display: chat
+  # Notification sent to target player when admin changes their setting
+  admin-notify-enabled:
+    text: "<#6C757D>[<#6B7A5E>ᴘʜᴀɴᴛᴏᴍꜱ<#6C757D>] <#D89B6A>An admin has <#8FAA87>enabled<#D89B6A> phantom spawning for you."
+    display: chat
+  admin-notify-disabled:
+    text: "<#6C757D>[<#6B7A5E>ᴘʜᴀɴᴛᴏᴍꜱ<#6C757D>] <#D89B6A>An admin has <#C27B6B>disabled<#D89B6A> phantom spawning for you."
+    display: chat
+  # Error messages
+  player-not-found:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Player '<#FCD472><player><#C27B6B>' not found."
+    display: chat
+  # Reload messages
+  reload-success:
+    text: "<#6C757D>[<#6B7A5E>ᴘʜᴀɴᴛᴏᴍꜱ<#6C757D>] <#8FAA87>Configuration reloaded."
+    display: chat
+  reload-failed:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Configuration reload failed. Check console for details."
+    display: chat
+
+# ============================================================
+# PLACEHOLDERAPI
+# ============================================================
+# Requires PlaceholderAPI to be installed
+#   %togglephantoms_enabled% - Returns "true" or "false"
+#   %togglephantoms_status%  - Returns the text below
+placeholder-enabled: "Enabled"
+placeholder-disabled: "Disabled"

@@ -1,0 +1,317 @@
+# ============================================================
+# OakMobDrops Configuration
+# Paper 1.21.10 | Supports ExecutableItems, ItemsAdder, Nexo, and vanilla items
+# ============================================================
+
+# ============================================================
+# GENERAL SETTINGS
+# ============================================================
+settings:
+  debug: false
+
+  # Looting enchantment increases drop chances
+  use-looting-enchantment: true
+
+  # Multiplier per looting level (0.5 = 50% increase per level)
+  # Example: 0.01% base with Looting III = 0.01% * (1 + 3*0.5) = 0.025%
+  looting-multiplier: 0.5
+
+  # Allow mobs from spawners to drop custom items (global default)
+  # Can be overridden per-mob with 'allow-spawner-drops'
+  allow-spawner-drops: false
+
+  # Track spawner tag inheritance for slime splits
+  inherit-spawner-tag: true
+
+  # Global announcement when someone gets a rare drop
+  # Uses MiniMessage format: https://docs.advntr.dev/minimessage/format.html
+  # Placeholders: <player>, <mob>, <item>, <amount>, <chance>, <chance_fraction>
+  # Individual drops can override this or set to null for no announcement
+  global-announcement: "<#FCD472><bold>⚡</bold> <player><#f2ebd7> just received <#8FAA87><amount>x <item><#f2ebd7> from a <#D89B6A><mob><#f2ebd7>!"
+
+  # Play sound when rare drop occurs (only for the recipient)
+  play-sound: true
+  sound: minecraft:ui.toast.challenge_complete
+
+  # Statistics tracking
+  enable-statistics: true
+
+  # Storage backend for statistics: "json" or "sqlite"
+  # Use "json" for simplicity (human-readable file)
+  # Use "sqlite" for better performance on large servers
+  storage-type: json
+
+  # Auto-save interval in minutes (0 = only save on shutdown)
+  statistics-autosave-interval: 5
+
+  # Maximum player statistics to keep (-1 = unlimited)
+  max-player-stats: 1000
+
+  # Radius to search for nearest player when no killer found
+  drop-recipient-search-radius: 50.0
+
+# ============================================================
+# MOB CONFIGURATION
+# ============================================================
+# Each mob can have multiple drops with independent chances.
+# Entity types: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/entity/EntityType.html
+#
+# Drop formats:
+#   List format (indexed):   drops: [ {id: ..., chance: ...}, ... ]
+#   Section format (named):  drops: { pet_drop: {chance: ...}, ... }
+#
+# Amount can be a range: "5-10" for random amounts.
+# Announcement: null = no message, "global" = use global announcement, or a custom string.
+mobs:
+  ZOMBIE:
+    enabled: true
+    require-player-kill: true
+    allow-spawner-drops: false
+    drops:
+      - id: zombie_pet
+        chance: 0.0001  # 0.01% = 1 in 10,000
+        type: NEXO
+        item-id: nm_plushie_zombie
+        amount: 1
+        drop-at-location: true
+        announcement: "<#6B7A5E><bold>🧟 ZOMBIE PET!</bold> <#FCD472><player><#f2ebd7> tamed an undead companion!"
+        play-sound: true
+        commands:
+          - "discordsrv broadcast 🎉 <player> just received a <item> from a <mob>! (<chance_fraction>)"
+
+      - id: zombie_essence
+        chance: 0.05  # 5%
+        type: EXECUTABLE_ITEMS
+        item-id: mob_essence
+        amount: 1-3
+        drop-at-location: false
+        announcement: null
+        play-sound: false
+
+      - id: zombie_gold
+        chance: 0.01  # 1%
+        type: VANILLA
+        material: GOLD_NUGGET
+        amount: 1-2
+        name: "<#FCD472>Zombie's Gold"
+        lore:
+          - "<#6C757D>A small piece of gold"
+          - "<#6C757D>dropped by the undead"
+        drop-at-location: true
+        announcement: null
+        play-sound: false
+
+  SKELETON:
+    enabled: true
+    require-player-kill: true
+    allow-spawner-drops: false
+    drops:
+      pet_drop:
+        chance: 0.0001
+        type: NEXO
+        item-id: nm_plushie_skeleton
+        amount: 1
+        drop-at-location: true
+        announcement: "<#6B7A5E><bold>💀 SKELETON PET!</bold> <#FCD472><player><#f2ebd7> acquired a bony friend!"
+        play-sound: true
+
+      bone_shard:
+        chance: 0.15
+        type: ITEMSADDER
+        item-id: custom:bone_shard
+        amount: 2-4
+        drop-at-location: true
+        announcement: null
+        play-sound: false
+
+      arrow_bundle:
+        chance: 0.02
+        type: VANILLA
+        material: ARROW
+        amount: 5-10
+        name: "<#f2ebd7>Skeleton's Quiver"
+        drop-at-location: true
+        announcement: "global"
+        play-sound: true
+
+  CREEPER:
+    enabled: true
+    require-player-kill: true
+    allow-spawner-drops: false
+    drops:
+      pet_drop:
+        chance: 0.001  # 0.1% = 1 in 1,000
+        type: EXECUTABLE_ITEMS
+        item-id: creeper_pet
+        amount: 1
+        drop-at-location: true
+        announcement: "<#6B7A5E><bold>💥</bold> <#FCD472><player><#f2ebd7> obtained a <#8FAA87><item><#f2ebd7> (<#FCD472><chance>%<#f2ebd7> drop rate)!"
+        play-sound: true
+        commands:
+          - "discordsrv broadcast 💥 <player> got a <item>! (<chance>% chance)"
+          - "eco give <player> 500"
+
+# ============================================================
+# MESSAGES
+# ============================================================
+# All player-facing messages use MiniMessage format.
+# https://docs.advntr.dev/minimessage/format.html
+#
+# Each message has:
+#   text:    The MiniMessage string (set to "" to disable)
+#   display: Delivery mode (chat or action_bar)
+#
+# Placeholders vary per message — see inline comments.
+messages:
+  # --- Help ---
+  # Placeholders: <version>
+  help-header:
+    text: "<#FCD472><bold>=== OakMobDrops v<version> ===</bold>"
+    display: chat
+  help-reload:
+    text: "<#FCD472>/omd reload <#6C757D>- <#f2ebd7>Reload configuration"
+    display: chat
+  help-stats:
+    text: "<#FCD472>/omd stats [type] [page] <#6C757D>- <#f2ebd7>View statistics"
+    display: chat
+  help-stats-player:
+    text: "<#FCD472>/omd stats player \\<name\\> <#6C757D>- <#f2ebd7>View player stats"
+    display: chat
+  help-test:
+    text: "<#FCD472>/omd test \\<mob\\> \\<drop\\> [player] [--full] <#6C757D>- <#f2ebd7>Test a drop"
+    display: chat
+  help-clearstats:
+    text: "<#FCD472>/omd clearstats <#6C757D>- <#f2ebd7>Reset all statistics"
+    display: chat
+  help-list:
+    text: "<#FCD472>/omd list <#6C757D>- <#f2ebd7>Show configured mob drops"
+    display: chat
+  help-migrate:
+    text: "<#FCD472>/omd migrate \\<json|sqlite\\> <#6C757D>- <#f2ebd7>Migrate statistics storage"
+    display: chat
+  # Placeholders: <count>
+  help-configured-mobs:
+    text: "<#6C757D>Configured mobs: <#f2ebd7><count>"
+    display: chat
+
+  # --- List ---
+  list-header:
+    text: "<#FCD472><bold>=== Configured Mob Drops ===</bold>"
+    display: chat
+  # Placeholders: <mob>, <count>, <flags>
+  list-mob:
+    text: "<#FCD472><mob> <#6C757D>(<count> drops)<flags>"
+    display: chat
+  # Placeholders: <drop_id>, <type>, <chance>, <amount>
+  list-drop:
+    text: "  <#6C757D>- <#8FAA87><drop_id> <#6C757D>[<type>] <#f2ebd7><chance> <#6C757D>x<amount>"
+    display: chat
+
+  # --- Pagination ---
+  pagination-prev:
+    text: "<hover:show_text:'<#6C757D>Previous page'><#FCD472>[<< ᴘʀᴇᴠ]</hover>"
+    display: chat
+  pagination-next:
+    text: "<hover:show_text:'<#6C757D>Next page'><#FCD472>[ɴᴇxᴛ >>]</hover>"
+    display: chat
+  # Placeholders: <current>, <total>
+  pagination-page:
+    text: "<#6C757D>Page <current> of <total>"
+    display: chat
+  pagination-prev-disabled:
+    text: "<#6C757D>[<< ᴘʀᴇᴠ]"
+    display: chat
+  pagination-next-disabled:
+    text: "<#6C757D>[ɴᴇxᴛ >>]"
+    display: chat
+
+  # --- Commands ---
+  reload-success:
+    text: "<#6C757D>[<#6B7A5E>ᴅʀᴏᴘꜱ<#6C757D>] <#8FAA87>Configuration reloaded successfully."
+    display: chat
+  reload-failed:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Configuration reload failed. Keeping previous config."
+    display: chat
+
+  # --- Errors ---
+  stats-disabled:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Statistics tracking is disabled."
+    display: chat
+  # Placeholders: <mob>
+  invalid-mob-type:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Invalid mob type: <#FCD472><mob><#C27B6B>."
+    display: chat
+  no-config-for-mob:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>No configuration for mob: <#FCD472><mob><#C27B6B>."
+    display: chat
+  # Placeholders: <drop>, <mob>
+  drop-not-found:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Drop '<#FCD472><drop><#C27B6B>' not found for <#FCD472><mob><#C27B6B>."
+    display: chat
+  player-not-found:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Player not found."
+    display: chat
+  # Placeholders: <player>
+  stats-player-not-found:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>No statistics found for player '<#FCD472><player><#C27B6B>'."
+    display: chat
+
+  # --- Test ---
+  # Placeholders: <drop>, <player>
+  test-success-simple:
+    text: "<#6C757D>[<#6B7A5E>ᴅʀᴏᴘꜱ<#6C757D>] <#8FAA87>Gave <#FCD472><drop><#8FAA87> to <#FCD472><player><#8FAA87>."
+    display: chat
+  # Placeholders: <drop>, <amount>, <player>
+  test-success-full:
+    text: "<#6C757D>[<#6B7A5E>ᴅʀᴏᴘꜱ<#6C757D>] <#8FAA87>Full test: gave <#FCD472><drop><#8FAA87> x<#FCD472><amount><#8FAA87> to <#FCD472><player><#8FAA87> (with announcements, stats, commands)."
+    display: chat
+  # Placeholders: <drop>, <backend>, <available>
+  test-build-failed:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Failed to build '<#FCD472><drop><#C27B6B>' using <#FCD472><backend><#C27B6B> backend (available: <#FCD472><available><#C27B6B>)."
+    display: chat
+
+  # --- Clearstats ---
+  clearstats-warning:
+    text: "<#6C757D>[<#6B7A5E>ᴅʀᴏᴘꜱ<#6C757D>] <#D89B6A>This will permanently clear ALL statistics data! <click:run_command:'/omd clearstats confirm'><hover:show_text:'<#C27B6B>This action cannot be undone'><#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ᴄᴏɴꜰɪʀᴍ]</hover></click> <#6C757D>(30 seconds)"
+    display: chat
+  clearstats-confirmed:
+    text: "<#6C757D>[<#6B7A5E>ᴅʀᴏᴘꜱ<#6C757D>] <#8FAA87>Statistics have been reset."
+    display: chat
+  clearstats-expired:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Confirmation expired. Run <#FCD472>/omd clearstats<#C27B6B> again."
+    display: chat
+  # Placeholders: <path>
+  clearstats-backup:
+    text: "<#6C757D>[<#6B7A5E>ᴅʀᴏᴘꜱ<#6C757D>] <#f2ebd7>Backup saved to: <#FCD472><path><#f2ebd7>."
+    display: chat
+
+  # --- Migrate ---
+  # Placeholders: <target>
+  migrate-started:
+    text: "<#6C757D>[<#6B7A5E>ᴅʀᴏᴘꜱ<#6C757D>] <#f2ebd7>Migrating statistics to <#FCD472><target><#f2ebd7>..."
+    display: chat
+  # Placeholders: <backup>
+  migrate-success:
+    text: "<#6C757D>[<#6B7A5E>ᴅʀᴏᴘꜱ<#6C757D>] <#8FAA87>Migration complete. <#f2ebd7>Old data backed up as <#FCD472><backup><#f2ebd7>."
+    display: chat
+  # Placeholders: <error>
+  migrate-failed:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Migration failed: <#FCD472><error>"
+    display: chat
+  # Placeholders: <type>
+  migrate-same-type:
+    text: "<#6C757D>[<#6B7A5E>ᴅʀᴏᴘꜱ<#6C757D>] <#D89B6A>Already using <#FCD472><type><#D89B6A> storage."
+    display: chat
+
+  # --- Misc ---
+  no-drops-configured:
+    text: "<#6C757D>[<#6B7A5E>ᴅʀᴏᴘꜱ<#6C757D>] <#D89B6A>No mob drops configured."
+    display: chat
+  only-players:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>This command can only be used by players."
+    display: chat
+
+# ========================================
+#          DO NOT EDIT BELOW
+# ========================================
+config-version: 1

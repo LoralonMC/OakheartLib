@@ -1,0 +1,272 @@
+# ============================================================
+#                        OAKPETS
+#    Custom cosmetic pet companion system with ModelEngine.
+# ============================================================
+
+# ============================================================
+# GENERAL SETTINGS
+# ============================================================
+debug: false
+
+# How often player settings (favorites, sort mode, etc.) are saved
+# to the database in seconds. Lower = more frequent writes.
+batch-write-interval: 300
+
+# ============================================================
+# FOLLOW BEHAVIOR
+# ============================================================
+follow:
+  distance: 4           # blocks before pet starts moving toward owner
+  teleport-distance: 10 # blocks before pet teleports instantly
+  tick-interval: 10     # ticks between follow checks (10 = 0.5s)
+
+# ============================================================
+# SEASONAL FEATURES
+# ============================================================
+seasonal:
+  santa-hat:
+    enabled: true
+    start: "12-01"  # MM-DD format
+    end: "01-05"    # wraps across year boundary
+
+# ============================================================
+# CATEGORIES
+# ============================================================
+categories:
+  rank-pets:
+    display-name: "Rank Pets"
+    material: GOLD_INGOT
+    sort-order: 1
+  mob-pets:
+    display-name: "Mob Pets"
+    material: ZOMBIE_HEAD
+    sort-order: 2
+  crate-pets:
+    display-name: "Crate Pets"
+    material: CHEST
+    sort-order: 3
+
+# ============================================================
+# GUI SETTINGS
+# ============================================================
+gui:
+  title: "ᴘᴇᴛꜱ"
+  max-pet-rows: 5
+  open-sound: "ui.button.click"
+  click-sound: "ui.button.click"
+  items:
+    filler:
+      material: GRAY_STAINED_GLASS_PANE
+    previous-page:
+      slot: 0
+      material: ARROW
+      name: "<#E5C5D0>Previous Page"
+      lore:
+        - "<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ɢᴏ ʙᴀᴄᴋ]"
+    sort:
+      slot: 1
+      material: HOPPER
+      name: "<#E5C5D0>Sort: <#f2ebd7><mode>"
+      lore:
+        - "<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ᴄʏᴄʟᴇ]"
+    reverse:
+      slot: 2
+      ascending-material: AMETHYST_SHARD
+      descending-material: PRISMARINE_SHARD
+      ascending-label: "Ascending"
+      descending-label: "Descending"
+      name: "<#E5C5D0>Order: <#f2ebd7><direction>"
+      lore:
+        - "<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ᴛᴏɢɢʟᴇ]"
+    page-indicator:
+      slot: 3
+      material: PAPER
+      name: "<#6C757D>Page <#f2ebd7><current><#6C757D>/<#f2ebd7><total>"
+      lore: []
+    clear-pet:
+      slot: 4
+      material: BARRIER
+      name: "<#C27B6B>Despawn Pet"
+      lore:
+        - "<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ᴅᴇꜱᴘᴀᴡɴ]"
+    filter:
+      slot: 6
+      all-material: PINK_STAINED_GLASS_PANE
+      favorites-material: GLOW_INK_SAC
+      name: "<#E5C5D0>Filter: <#f2ebd7><mode>"
+      lore:
+        - "<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ᴄʏᴄʟᴇ]"
+    next-page:
+      slot: 8
+      material: ARROW
+      name: "<#E5C5D0>Next Page"
+      lore:
+        - "<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ɢᴏ ꜰᴏʀᴡᴀʀᴅ]"
+  sort-names:
+    category: "Category"
+    alphabetical: "A-Z"
+    most-claimed: "Most Claimed"
+  filter-names:
+    all: "All"
+    favorites: "Favorites"
+  # Pet item lore template
+  # Available placeholders: <favorite>, <pet_lore>, <claim_line>,
+  #   <left_click>, <right_click>, <count>
+  # Empty lines after placeholder resolution are removed
+  pet-lore:
+    layout:
+      - "<favorite>"
+      - "<status>"
+      - "<pet_lore>"
+      - ""
+      - "<claim_line>"
+      - ""
+      - "<left_click>"
+      - "<right_click>"
+    claim-line: "<#6C757D>ᴏᴡɴᴇᴅ ʙʏ <#FCD472><count> <#6C757D>ᴘʟᴀʏᴇʀꜱ"
+    status-active: "<#8FAA87>ᴀᴄᴛɪᴠᴇ"
+    left-click-summon: "<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ꜱᴜᴍᴍᴏɴ]"
+    left-click-despawn: "<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ᴅᴇꜱᴘᴀᴡɴ]"
+    right-click-favorite: "<#FCD472>[ʀɪɢʜᴛ-ᴄʟɪᴄᴋ ᴛᴏ ꜰᴀᴠᴏʀɪᴛᴇ]"
+    right-click-unfavorite: "<#FCD472>[ʀɪɢʜᴛ-ᴄʟɪᴄᴋ ᴛᴏ ᴜɴꜰᴀᴠᴏʀɪᴛᴇ]"
+    favorite-indicator: "<#FCD472>★ ꜰᴀᴠᴏʀɪᴛᴇ"
+
+# ============================================================
+# ADMIN GUI (for /pets <player>)
+# ============================================================
+admin-gui:
+  title: "Pets: <player>"
+  locked-material: RED_STAINED_GLASS_PANE
+  # Available placeholders: <status>, <pet_lore>, <pet_id>, <click_action>, <count>
+  pet-lore:
+    layout:
+      - "<status>"
+      - "<#6C757D>ɪᴅ: <#FCD472><pet_id>"
+      - "<pet_lore>"
+      - ""
+      - "<click_action>"
+    status:
+      unlocked: "<#8FAA87>ᴜɴʟᴏᴄᴋᴇᴅ"
+      locked: "<#C27B6B>ʟᴏᴄᴋᴇᴅ"
+    click-action:
+      grant: "<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ɢʀᴀɴᴛ]"
+      revoke: "<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ʀᴇᴠᴏᴋᴇ]"
+      permission-unlocked: "<#6C757D>ᴍᴀɴᴀɢᴇᴅ ʙʏ ᴘᴇʀᴍɪꜱꜱɪᴏɴꜱ <#8FAA87>(ʜᴀꜱ ᴀᴄᴄᴇꜱꜱ)"
+      permission-locked: "<#6C757D>ᴍᴀɴᴀɢᴇᴅ ʙʏ ᴘᴇʀᴍɪꜱꜱɪᴏɴꜱ <#C27B6B>(ɴᴏ ᴀᴄᴄᴇꜱꜱ)"
+      permission-offline: "<#6C757D>ᴍᴀɴᴀɢᴇᴅ ʙʏ ᴘᴇʀᴍɪꜱꜱɪᴏɴꜱ <#D89B6A>(ᴏꜰꜰʟɪɴᴇ)"
+
+# ============================================================
+# VOUCHER DEFAULTS
+# ============================================================
+# Default appearance for pet voucher items.
+# Individual pets can override these in their voucher section.
+voucher:
+  material: NAME_TAG
+  name: "<#E5C5D0><pet_name> <#f2ebd7>Pet Voucher"
+  lore:
+    - "<#f2ebd7>ʀᴇᴅᴇᴇᴍ ᴛᴏ ᴜɴʟᴏᴄᴋ ᴛʜɪꜱ ᴘᴇᴛ."
+    - ""
+    - "<#FCD472>[ʀɪɢʜᴛ-ᴄʟɪᴄᴋ ᴛᴏ ʀᴇᴅᴇᴇᴍ]"
+  glow: true
+
+# ============================================================
+# CONFIRM GUI (voucher redemption)
+# ============================================================
+confirm-gui:
+  title: "Confirm Redemption"
+  size: 27
+  filler:
+    material: GRAY_STAINED_GLASS_PANE
+  confirm:
+    slot: 11
+    material: LIME_STAINED_GLASS_PANE
+    name: "<#8FAA87>Confirm"
+    lore: []
+  deny:
+    slot: 15
+    material: RED_STAINED_GLASS_PANE
+    name: "<#C27B6B>Cancel"
+    lore: []
+  pet-info:
+    slot: 13
+
+# ============================================================
+# MESSAGES
+# ============================================================
+# MiniMessage format: https://docs.advntr.dev/minimessage/format.html
+# Placeholders: <pet_name> - Pet display name, <player> - Player name
+# Set text to "" to disable individual messages
+# Display modes: chat, action_bar
+messages:
+  pet-summoned:
+    text: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>ꜱᴜᴍᴍᴏɴᴇᴅ <#E5C5D0><pet_name><#f2ebd7>!"
+    display: chat
+  pet-despawned:
+    text: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>ᴅᴇꜱᴘᴀᴡɴᴇᴅ <#E5C5D0><pet_name><#f2ebd7>."
+    display: chat
+  pet-respawned:
+    text: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>ʏᴏᴜʀ <#E5C5D0><pet_name> <#f2ebd7>ʜᴀꜱ ʀᴇᴛᴜʀɴᴇᴅ!"
+    display: chat
+  pet-granted:
+    text: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>ʏᴏᴜ ᴜɴʟᴏᴄᴋᴇᴅ <#E5C5D0><pet_name><#f2ebd7>!"
+    display: chat
+  pet-already-owned:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>ʏᴏᴜ ᴀʟʀᴇᴀᴅʏ ᴏᴡɴ ᴛʜɪꜱ ᴘᴇᴛ."
+    display: chat
+  pet-revoked-notify:
+    text: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#C27B6B><pet_name> <#f2ebd7>ʜᴀꜱ ʙᴇᴇɴ ʀᴇᴠᴏᴋᴇᴅ."
+    display: chat
+  no-pets-available:
+    text: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#C27B6B>ʏᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ᴀɴʏ ᴘᴇᴛꜱ ᴜɴʟᴏᴄᴋᴇᴅ."
+    display: chat
+  spawn-failed:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>ꜰᴀɪʟᴇᴅ ᴛᴏ ꜱᴘᴀᴡɴ ᴘᴇᴛ. ᴄʜᴇᴄᴋ ᴄᴏɴꜱᴏʟᴇ."
+    display: chat
+  no-active-pet:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>ʏᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ ᴀɴ ᴀᴄᴛɪᴠᴇ ᴘᴇᴛ."
+    display: chat
+  rename-prompt:
+    text: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>ᴛʏᴘᴇ ᴀ ɴᴇᴡ ɴᴀᴍᴇ ɪɴ ᴄʜᴀᴛ, ᴏʀ <#FCD472>cancel <#f2ebd7>ᴛᴏ ᴄᴀɴᴄᴇʟ."
+    display: chat
+  rename-success:
+    text: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>ᴘᴇᴛ ʀᴇɴᴀᴍᴇᴅ ᴛᴏ <#E5C5D0><pet_name><#f2ebd7>!"
+    display: chat
+  rename-cancelled:
+    text: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>ʀᴇɴᴀᴍᴇ ᴄᴀɴᴄᴇʟʟᴇᴅ."
+    display: chat
+  rename-invalid:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>ɴᴀᴍᴇ ᴄᴀɴɴᴏᴛ ʙᴇ ᴇᴍᴘᴛʏ."
+    display: chat
+  name-reset:
+    text: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>ɴᴀᴍᴇ ʀᴇꜱᴇᴛ ꜰᴏʀ <#E5C5D0><pet_name><#f2ebd7>."
+    display: chat
+  rename-too-long:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>ɴᴀᴍᴇ ᴍᴜꜱᴛ ʙᴇ <#FCD472><max_length> <#C27B6B>ᴄʜᴀʀᴀᴄᴛᴇʀꜱ ᴏʀ ʟᴇꜱꜱ."
+    display: chat
+  # Favorite messages
+  pet-favorited:
+    text: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>Added to favorites."
+    display: action_bar
+  pet-unfavorited:
+    text: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>Removed from favorites."
+    display: action_bar
+  # Voucher messages
+  voucher-invalid:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>ᴛʜɪꜱ ᴠᴏᴜᴄʜᴇʀ ɪꜱ ɴᴏ ʟᴏɴɢᴇʀ ᴠᴀʟɪᴅ."
+    display: chat
+  voucher-not-found:
+    text: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>ᴠᴏᴜᴄʜᴇʀ ɴᴏᴛ ꜰᴏᴜɴᴅ ɪɴ ʏᴏᴜʀ ʜᴀɴᴅ."
+    display: chat
+  # Command messages (flat strings, always chat)
+  commands:
+    reload-success: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#8FAA87>ᴄᴏɴꜰɪɢᴜʀᴀᴛɪᴏɴ ʀᴇʟᴏᴀᴅᴇᴅ."
+    reload-failed: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>ᴄᴏɴꜰɪɢᴜʀᴀᴛɪᴏɴ ʀᴇʟᴏᴀᴅ ꜰᴀɪʟᴇᴅ. ᴄʜᴇᴄᴋ ᴄᴏɴꜱᴏʟᴇ."
+    pet-not-found: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>ᴘᴇᴛ ɴᴏᴛ ꜰᴏᴜɴᴅ."
+    player-not-found: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>ᴘʟᴀʏᴇʀ ɴᴏᴛ ꜰᴏᴜɴᴅ."
+    give-success: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>ɢʀᴀɴᴛᴇᴅ <#E5C5D0><pet_name> <#f2ebd7>ᴛᴏ <#FCD472><player><#f2ebd7>."
+    give-failed: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>ꜰᴀɪʟᴇᴅ ᴛᴏ ɢʀᴀɴᴛ <pet_name> ᴛᴏ <player>."
+    revoke-success: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>ʀᴇᴠᴏᴋᴇᴅ <#E5C5D0><pet_name> <#f2ebd7>ꜰʀᴏᴍ <#FCD472><player><#f2ebd7>."
+    revoke-failed: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>ꜰᴀɪʟᴇᴅ ᴛᴏ ʀᴇᴠᴏᴋᴇ <pet_name> ꜰʀᴏᴍ <player>."
+    voucher-given: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>ɢᴀᴠᴇ <#FCD472><amount>x <#E5C5D0><pet_name> <#f2ebd7>ᴠᴏᴜᴄʜᴇʀ ᴛᴏ <#FCD472><player><#f2ebd7>."
+    voucher-received: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#f2ebd7>ʏᴏᴜ ʀᴇᴄᴇɪᴠᴇᴅ <#FCD472><amount>x <#E5C5D0><pet_name> <#f2ebd7>ᴠᴏᴜᴄʜᴇʀ!"
+    admin-permission-managed: "<#6C757D>[<#E5C5D0>ᴘᴇᴛꜱ<#6C757D>] <#6C757D>ᴛʜɪꜱ ᴘᴇᴛ ɪꜱ ᴍᴀɴᴀɢᴇᴅ ʙʏ ᴘᴇʀᴍɪꜱꜱɪᴏɴꜱ."

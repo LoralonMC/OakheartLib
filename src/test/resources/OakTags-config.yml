@@ -1,0 +1,314 @@
+# ============================================================
+#                        OAKTAGS
+#         Unified chat tag system with GUI & vouchers
+# ============================================================
+#
+# PlaceholderAPI Placeholders (requires PlaceholderAPI):
+#   %oaktags_prefix%       - Chat prefix (tag if equipped, rank prefix if not)
+#   %oaktags_prefix+%      - Same as above, with a trailing space (empty when blank)
+#   %oaktags_tag%          - Active tag display (MiniMessage formatted)
+#   %oaktags_tag_name%     - Active tag ID (e.g. "vip")
+#   %oaktags_unlocked%     - Number of tags the player has unlocked
+#   %oaktags_total%        - Total number of visible tags
+#   %oaktags_has_<id>%     - Whether player has a specific tag (true/false)
+#   %oaktags_count_<id>%   - Number of players who claimed a specific tag
+
+# ============================================================
+# GENERAL SETTINGS
+# ============================================================
+debug: false
+batch-write-interval: 300
+
+# ============================================================
+# CHAT PREFIX
+# ============================================================
+# Controls the %oaktags_prefix% placeholder for use in chat formatters.
+#
+# When a player has no tag equipped, the fallback is shown instead.
+# Supports PlaceholderAPI placeholders (e.g. %luckperms_prefix%).
+#
+# Players with the stack permission show both their rank prefix
+# and their equipped tag (e.g. [Admin] [VoteRank1]).
+# Set stack-permission to '' to disable prefix stacking entirely.
+prefix:
+  fallback: '%luckperms_prefix%'
+  stack-permission: 'oaktags.stack'
+
+# ============================================================
+# CATEGORY DEFINITIONS
+# ============================================================
+# Categories organize tags in the GUI. Add, remove, or rename
+# categories freely. Tags reference these by key name.
+# sort-order controls the display order in Category sort mode.
+categories:
+  general:
+    display-name: 'General'
+    sort-order: 1
+    material: NAME_TAG
+  seasonal:
+    display-name: 'Seasonal'
+    sort-order: 2
+    material: SWEET_BERRIES
+  special:
+    display-name: 'Special'
+    sort-order: 3
+    material: NETHER_STAR
+
+# ============================================================
+# GUI SETTINGS
+# ============================================================
+gui:
+  title: '<#6C757D>Chat Tags'
+  # Maximum rows for tags (1-5). Navigation bar adds one extra row.
+  max-tag-rows: 5
+  # Format for tag item display names in the GUI.
+  # Placeholders: <tag> - Tag display (with formatting), <player> - Player name
+  tag-display-format: '<tag> <player>'
+  # Sound played when opening the GUI (empty to disable)
+  open-sound: 'minecraft:block.chest.open'
+  # Sound played when equipping a tag
+  equip-sound: 'minecraft:entity.player.levelup'
+  # Sound played when clicking a locked tag
+  locked-sound: 'minecraft:block.note_block.bass'
+  # Sound played when clicking navigation buttons
+  click-sound: 'minecraft:ui.button.click'
+  # Display names for sort modes
+  sort-names:
+    category: 'Category'
+    alphabetical: 'A-Z'
+    newest: 'Newest'
+    unlocked-first: 'Unlocked First'
+    most-claimed: 'Most Claimed'
+  # Display names for filter modes
+  filter-names:
+    all: 'All'
+    favorites: 'Favorites'
+    unlocked: 'Unlocked'
+    locked: 'Locked'
+  # GUI items — each item can have material, name, lore, and slot
+  # Slots are 0-8, relative to the navigation bar row.
+  items:
+    filler:
+      material: GRAY_STAINED_GLASS_PANE
+    locked-tag:
+      material: RED_STAINED_GLASS_PANE
+    previous-page:
+      slot: 0
+      material: ARROW
+      name: '<#f2ebd7>Previous Page'
+      lore: []
+    sort:
+      slot: 1
+      material: HOPPER
+      name: '<#f2ebd7>Sort: <#FCD472><mode>'
+      lore: []
+    reverse:
+      slot: 2
+      ascending-material: ARROW
+      descending-material: SPECTRAL_ARROW
+      name: '<#f2ebd7>Order: <#FCD472><direction>'
+      ascending-label: 'Ascending'
+      descending-label: 'Descending'
+      lore: []
+    page-indicator:
+      slot: 3
+      material: PAPER
+      name: '<#6C757D>Page <#FCD472><current><#6C757D>/<#FCD472><total>'
+      lore: []
+    clear:
+      slot: 4
+      material: BARRIER
+      name: '<#f2ebd7>Clear Active Tag'
+      lore: []
+    filter:
+      slot: 6
+      all-material: COMPASS
+      favorites-material: GLOW_INK_SAC
+      unlocked-material: LIME_DYE
+      locked-material: GRAY_DYE
+      name: '<#f2ebd7>Filter: <#FCD472><mode>'
+      lore: []
+    next-page:
+      slot: 8
+      material: ARROW
+      name: '<#f2ebd7>Next Page'
+      lore: []
+  # Tag item lore — template layout controls order and content.
+  # Each line is a lore line. Use '' for intentional blank lines.
+  # <tag_lore> expands to the tag's lore from tags.yml (must be alone on a line).
+  # Lines that resolve to visually empty are automatically removed.
+  # Available placeholders: <status>, <tag_lore>, <left_click_action>, <right_click_action>, <count>, <favorite>
+  tag-lore:
+    layout:
+      - '<favorite>'
+      - '<status>'
+      - '<tag_lore>'
+      - ''
+      - '<left_click_action>'
+      - '<right_click_action>'
+    status:
+      active: '<#8FAA87>Currently equipped!'
+      unlocked: '<#8FAA87>Unlocked'
+      locked: '<#C27B6B>Locked'
+    left-click-action:
+      equip: '<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ᴇǫᴜɪᴘ]'
+      unequip: '<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ᴜɴᴇǫᴜɪᴘ]'
+    right-click-action:
+      favorite: '<#FCD472>[ʀɪɢʜᴛ-ᴄʟɪᴄᴋ ᴛᴏ ꜰᴀᴠᴏʀɪᴛᴇ]'
+      unfavorite: '<#FCD472>[ʀɪɢʜᴛ-ᴄʟɪᴄᴋ ᴛᴏ ᴜɴꜰᴀᴠᴏʀɪᴛᴇ]'
+    # Text shown on favorited tags. Add <favorite> to your layout to display it.
+    favorite: '<#FCD472>★ Favorite'
+
+# ============================================================
+# VOUCHER DEFAULTS
+# ============================================================
+# Default voucher appearance when a tag doesn't define its own.
+voucher:
+  material: NAME_TAG
+  name: '<tag> <#f2ebd7>Chat Tag'
+  lore:
+    - '<#6C757D>ᴄᴏꜱᴍᴇᴛɪᴄ ᴛᴀɢ ᴛʜᴀᴛ ꜱʜᴏᴡꜱ ɪɴ ᴄʜᴀᴛ'
+    - ''
+    - '<#f2ebd7>ᴛʜɪꜱ ɪꜱ ᴀ ᴘʜʏꜱɪᴄᴀʟ ᴠᴏᴜᴄʜᴇʀ ᴛʜᴀᴛ'
+    - '<#f2ebd7>ɢɪᴠᴇꜱ ᴛʜᴇ <tag> <#f2ebd7>ᴛᴀɢ ᴡʜᴇɴ ᴜꜱᴇᴅ.'
+    - ''
+    - '<#FCD472>[ʀɪɢʜᴛ-ᴄʟɪᴄᴋ ᴛᴏ ʀᴇᴅᴇᴇᴍ]'
+  glow: true
+
+# ============================================================
+# TAG DEFAULTS
+# ============================================================
+# Defaults applied when creating tags via /tags create.
+# The display template supports <id> which is replaced with the tag ID.
+tag-defaults:
+  display: '<#FCD472>[<id>]'
+  material: NAME_TAG
+  category: general
+  lore:
+    - '<#6C757D>Tags claimed: <#FCD472><count>'
+
+# ============================================================
+# CONFIRMATION GUI
+# ============================================================
+confirm-gui:
+  title: '<#6C757D>Confirm Redemption'
+  # Inventory size (must be a multiple of 9: 9, 18, 27, 36, 45, 54)
+  size: 27
+  filler:
+    material: GRAY_STAINED_GLASS_PANE
+  confirm:
+    slot: 11
+    material: LIME_STAINED_GLASS_PANE
+    name: '<#8FAA87>Confirm'
+    lore:
+      - '<#f2ebd7>Click to redeem this tag.'
+  deny:
+    slot: 15
+    material: RED_STAINED_GLASS_PANE
+    name: '<#C27B6B>Cancel'
+    lore:
+      - '<#f2ebd7>Click to cancel.'
+  tag-info:
+    slot: 13
+
+# ============================================================
+# ADMIN GUI
+# ============================================================
+# GUI shown when admins use /tags <player> to view/manage a player's tags.
+# Reuses navigation items (filler, prev/next page, page indicator) from gui.items.
+# Placeholders: <player> - Target player name
+admin-gui:
+  title: '<#6C757D>Tags: <#FCD472><player>'
+  # Tag item lore — same template system as the player GUI.
+  # Available placeholders: <status>, <tag_lore>, <tag_id>, <click_action>, <count>
+  tag-lore:
+    layout:
+      - '<status>'
+      - '<#6C757D>ID: <#FCD472><tag_id>'
+      - '<tag_lore>'
+      - ''
+      - '<click_action>'
+    status:
+      unlocked: '<#8FAA87>Unlocked'
+      locked: '<#C27B6B>Locked'
+    click-action:
+      grant: '<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ɢʀᴀɴᴛ]'
+      revoke: '<#FCD472>[ᴄʟɪᴄᴋ ᴛᴏ ʀᴇᴠᴏᴋᴇ]'
+      permission-unlocked: '<#6C757D>Managed by permissions <#8FAA87>(has access)'
+      permission-locked: '<#6C757D>Managed by permissions <#C27B6B>(no access)'
+      permission-offline: '<#6C757D>Managed by permissions <#D89B6A>(offline)'
+
+# ============================================================
+# MESSAGES
+# ============================================================
+# MiniMessage format: https://docs.advntr.dev/minimessage/format.html
+#
+# Placeholders: <player> - Player name, <tag> - Tag display,
+#   <tag_id> - Tag ID, <amount> - Amount, <count> - Claim count
+# Set text to "" to disable individual messages.
+messages:
+  # Gameplay messages (text/display structure)
+  tag-equipped:
+    text: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#f2ebd7>Equipped tag: <tag>"
+    display: chat
+  tag-cleared:
+    text: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#f2ebd7>Active tag cleared."
+    display: chat
+  tag-already-owned:
+    text: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#D89B6A>You already have this tag."
+    display: action_bar
+  voucher-redeemed:
+    text: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#8FAA87>Redeemed tag: <tag>"
+    display: chat
+  tag-favorited:
+    text: "<#8FAA87>Added to favorites."
+    display: action_bar
+  tag-unfavorited:
+    text: "<#D89B6A>Removed from favorites."
+    display: action_bar
+  voucher-not-found:
+    text: "<#C27B6B>Voucher no longer in hand."
+    display: action_bar
+  voucher-invalid:
+    text: "<#C27B6B>This voucher is for a tag that no longer exists."
+    display: action_bar
+  # Command messages (flat strings, always chat)
+  commands:
+    reload-success: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#8FAA87>Configuration reloaded."
+    reload-failed: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Reload failed. Check console."
+    tag-given: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#f2ebd7>Gave <tag> <#f2ebd7>to <#FCD472><player><#f2ebd7>."
+    tag-received: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#f2ebd7>You received the <tag> <#f2ebd7>tag!"
+    tag-revoked: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#f2ebd7>Revoked <tag> <#f2ebd7>from <#FCD472><player><#f2ebd7>."
+    tag-revoked-notify: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#C27B6B>Your <tag> <#C27B6B>tag was revoked."
+    tag-not-found: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Tag not found: <#FCD472><tag_id>"
+    tag-not-granted-type: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>That tag uses permission-based unlock, not grant."
+    player-not-found: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Player not found."
+    player-already-has-tag: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B><player> already has that tag."
+    player-doesnt-have-tag: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B><player> doesn't have that tag."
+    tag-deleted: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#f2ebd7>Deleted tag <#FCD472><tag_id><#f2ebd7>."
+    tag-id-exists: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Tag ID already exists: <#FCD472><tag_id>"
+    invalid-tag-id: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Invalid tag ID: <#FCD472><tag_id><#C27B6B>. Use only letters, numbers, hyphens, and underscores."
+    invalid-material: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Invalid material: <#FCD472><value>"
+    editor-saved: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#8FAA87>Saved tag <#FCD472><tag_id><#8FAA87> to tags.yml."
+    editor-save-failed: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>Failed to write to tags.yml. Check console."
+    editor-cancelled: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#f2ebd7>Editor cancelled."
+    editor-input-cancelled: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#D89B6A>Input cancelled."
+    voucher-given: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#f2ebd7>Gave <#FCD472><amount><#f2ebd7>x <tag> <#f2ebd7>voucher to <#FCD472><player><#f2ebd7>."
+    voucher-received: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#f2ebd7>You received <#FCD472><amount><#f2ebd7>x <tag> <#f2ebd7>voucher!"
+    list-header: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#f2ebd7>Tags for <#FCD472><player><#f2ebd7>:"
+    list-entry: "<#6C757D>  - <tag>"
+    list-empty: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#D89B6A>No unlocked tags."
+    no-permission: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>You don't have permission."
+    player-only: "<#6C757D>[<#C27B6B>ᴇʀʀᴏʀ<#6C757D>] <#C27B6B>This command is player-only."
+    help-header: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#f2ebd7>Available commands:"
+    help-use: "<#6C757D>  /tags <#f2ebd7>- Open tag selector"
+    help-reload: "<#6C757D>  /tags reload <#f2ebd7>- Reload configuration"
+    help-give: "<#6C757D>  /tags give <player> <tag> <#f2ebd7>- Grant a tag"
+    help-revoke: "<#6C757D>  /tags revoke <player> <tag> <#f2ebd7>- Revoke a tag"
+    help-create: "<#6C757D>  /tags create <id> <#f2ebd7>- Create a tag (opens editor)"
+    help-edit: "<#6C757D>  /tags edit <id> <#f2ebd7>- Edit a tag (opens editor)"
+    help-delete: "<#6C757D>  /tags delete <id> <#f2ebd7>- Delete a tag"
+    help-voucher: "<#6C757D>  /tags voucher <tag> [player] [amount] [silent] <#f2ebd7>- Give vouchers"
+    help-list: "<#6C757D>  /tags list [player] <#f2ebd7>- List unlocked tags"
+    help-admin: "<#6C757D>  /tags <player> <#f2ebd7>- Admin tag management"
+    admin-permission-managed: "<#6C757D>[<#6B7A5E>ᴛᴀɢꜱ<#6C757D>] <#D89B6A>This tag is managed by permissions."
