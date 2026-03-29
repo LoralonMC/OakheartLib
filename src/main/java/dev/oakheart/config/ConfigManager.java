@@ -8,22 +8,22 @@ import java.nio.file.Path;
 import java.util.*;
 
 /**
- * The main API for OakheartConfig. Wraps a YamlDocument and provides
+ * The main API for ConfigManager. Wraps a YamlDocument and provides
  * Bukkit-style typed accessors with dot-path navigation.
  *
  * <p>This is a preservation-first config document model for a constrained
  * Minecraft-style YAML subset. Unmodified regions are preserved exactly.
- * Modified lines are normalized according to OakheartConfig formatting rules.</p>
+ * Modified lines are normalized according to ConfigManager formatting rules.</p>
  *
  * <h2>Usage:</h2>
  * <pre>{@code
- * OakheartConfig config = OakheartConfig.load(configPath);
+ * ConfigManager config = ConfigManager.load(configPath);
  * String name = config.getString("display.name", "Default");
  * config.set("api-key", generatedKey);
  * config.save();
  * }</pre>
  */
-public final class OakheartConfig {
+public final class ConfigManager {
 
     private volatile YamlDocument document;
     private final Path filePath;
@@ -32,9 +32,9 @@ public final class OakheartConfig {
     // For section views: the base node for path resolution
     private final YamlNode baseNode;
     // Reference to the owning config (for section views that share the document)
-    private final OakheartConfig owner;
+    private final ConfigManager owner;
 
-    private OakheartConfig(YamlDocument document, Path filePath) {
+    private ConfigManager(YamlDocument document, Path filePath) {
         this.document = document;
         this.filePath = filePath;
         this.baseNode = document.getRoot();
@@ -42,7 +42,7 @@ public final class OakheartConfig {
     }
 
     // Section view constructor
-    private OakheartConfig(YamlDocument document, Path filePath, YamlNode baseNode, OakheartConfig owner) {
+    private ConfigManager(YamlDocument document, Path filePath, YamlNode baseNode, ConfigManager owner) {
         this.document = document;
         this.filePath = filePath;
         this.baseNode = baseNode;
@@ -56,27 +56,27 @@ public final class OakheartConfig {
     /**
      * Load a YAML file from disk, preserving all formatting.
      */
-    public static OakheartConfig load(Path filePath) throws IOException {
+    public static ConfigManager load(Path filePath) throws IOException {
         String text = Files.readString(filePath, StandardCharsets.UTF_8);
         // Normalize Windows line endings
         text = text.replace("\r\n", "\n");
         YamlDocument doc = YamlParser.parse(text);
-        return new OakheartConfig(doc, filePath);
+        return new ConfigManager(doc, filePath);
     }
 
     /**
      * Parse YAML from a String.
      */
-    public static OakheartConfig fromString(String yamlText) {
+    public static ConfigManager fromString(String yamlText) {
         String normalized = yamlText != null ? yamlText.replace("\r\n", "\n") : "";
         YamlDocument doc = YamlParser.parse(normalized);
-        return new OakheartConfig(doc, null);
+        return new ConfigManager(doc, null);
     }
 
     /**
      * Parse YAML from an InputStream (e.g., plugin.getResource("config.yml")).
      */
-    public static OakheartConfig fromStream(InputStream stream) throws IOException {
+    public static ConfigManager fromStream(InputStream stream) throws IOException {
         if (stream == null) {
             throw new IOException("InputStream is null");
         }
@@ -163,11 +163,11 @@ public final class OakheartConfig {
      * Returns a lightweight view backed by the same document.
      * Returns null if the path does not exist or is not a map.
      */
-    public OakheartConfig getSection(String path) {
+    public ConfigManager getSection(String path) {
         YamlNode node = resolve(path);
         if (node == null || node.getType() != NodeType.MAP) return null;
-        OakheartConfig root = owner != null ? owner : this;
-        return new OakheartConfig(document, filePath, node, root);
+        ConfigManager root = owner != null ? owner : this;
+        return new ConfigManager(document, filePath, node, root);
     }
 
     /**
@@ -592,7 +592,7 @@ public final class OakheartConfig {
      * @param defaults the defaults config (e.g., loaded from JAR resource)
      * @return true if any keys were added (caller should save)
      */
-    public boolean mergeDefaults(OakheartConfig defaults) {
+    public boolean mergeDefaults(ConfigManager defaults) {
         synchronized (getLock()) {
             return YamlMerger.merge(getDocument(), defaults.getDocument());
         }
@@ -601,7 +601,7 @@ public final class OakheartConfig {
     /**
      * Check if this config is missing any keys from the defaults.
      */
-    public boolean hasNewKeys(OakheartConfig defaults) {
+    public boolean hasNewKeys(ConfigManager defaults) {
         return YamlMerger.hasNewKeys(getDocument(), defaults.getDocument());
     }
 

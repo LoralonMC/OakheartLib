@@ -31,7 +31,7 @@ Purpose-built for Minecraft plugin configs, not general YAML:
 
 ```java
 // Load from file
-OakheartConfig config = OakheartConfig.load(configFile.toPath());
+ConfigManager config = ConfigManager.load(configFile.toPath());
 
 // Read values (Bukkit-familiar API)
 String name = config.getString("display.name", "Default");
@@ -40,7 +40,7 @@ boolean debug = config.getBoolean("settings.debug");
 List<String> worlds = config.getStringList("disabled-worlds");
 
 // Sections and keys
-OakheartConfig settings = config.getSection("settings");
+ConfigManager settings = config.getSection("settings");
 Set<String> keys = config.getKeys("settings", false);
 
 // Set values (updates just that line, preserves everything else)
@@ -52,7 +52,7 @@ config.set("tags", List.of("survival", "adventure"));
 config.save();
 
 // Merge defaults from JAR resource (adds missing keys with comments)
-OakheartConfig defaults = OakheartConfig.fromStream(plugin.getResource("config.yml"));
+ConfigManager defaults = ConfigManager.fromStream(plugin.getResource("config.yml"));
 if (config.mergeDefaults(defaults)) {
     config.save();
 }
@@ -67,9 +67,9 @@ config.reload();
 
 | Method | Description |
 |--------|-------------|
-| `OakheartConfig.load(Path)` | Load from file |
-| `OakheartConfig.fromString(String)` | Parse from string |
-| `OakheartConfig.fromStream(InputStream)` | Parse from stream (e.g. JAR resource) |
+| `ConfigManager.load(Path)` | Load from file |
+| `ConfigManager.fromString(String)` | Parse from string |
+| `ConfigManager.fromStream(InputStream)` | Parse from stream (e.g. JAR resource) |
 
 **Getters**
 
@@ -82,7 +82,7 @@ config.reload();
 | `getBoolean(path, default)` | Boolean value |
 | `getStringList(path)` | List of strings |
 | `getIntList(path)` | List of integers |
-| `getSection(path)` | Sub-section as OakheartConfig view |
+| `getSection(path)` | Sub-section as ConfigManager view |
 | `getKeys(path, deep)` | Child keys (shallow or deep) |
 | `contains(path)` | Check if path exists |
 | `isSection(path)` | Check if path is a map section |
@@ -101,8 +101,8 @@ config.reload();
 | `save()` | Save to original file (atomic write) |
 | `save(Path)` | Save to arbitrary path |
 | `reload()` | Re-read from disk |
-| `mergeDefaults(OakheartConfig)` | Add missing keys from defaults |
-| `hasNewKeys(OakheartConfig)` | Check if defaults have new keys |
+| `mergeDefaults(ConfigManager)` | Add missing keys from defaults |
+| `hasNewKeys(ConfigManager)` | Check if defaults have new keys |
 
 #### Write Invariants
 

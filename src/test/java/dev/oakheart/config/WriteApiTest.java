@@ -13,7 +13,7 @@ class WriteApiTest {
 
     @Test
     void setExistingScalar() {
-        OakheartConfig config = OakheartConfig.fromString("""
+        ConfigManager config = ConfigManager.fromString("""
                 name: TestPlugin
                 debug: false
                 max-count: 100
@@ -37,7 +37,7 @@ class WriteApiTest {
 
     @Test
     void setExistingPreservesInlineComment() {
-        OakheartConfig config = OakheartConfig.fromString(
+        ConfigManager config = ConfigManager.fromString(
                 "repair_amount: 63  # 25% of max durability");
 
         config.set("repair_amount", 127);
@@ -49,7 +49,7 @@ class WriteApiTest {
 
     @Test
     void setExistingPreservesQuoteStyle() {
-        OakheartConfig config = OakheartConfig.fromString("""
+        ConfigManager config = ConfigManager.fromString("""
                 single-quoted: 'hello world'
                 double-quoted: "hello world"
                 unquoted: hello
@@ -67,7 +67,7 @@ class WriteApiTest {
 
     @Test
     void setNewTopLevelKey() {
-        OakheartConfig config = OakheartConfig.fromString("""
+        ConfigManager config = ConfigManager.fromString("""
                 existing: value
                 """);
 
@@ -82,7 +82,7 @@ class WriteApiTest {
 
     @Test
     void setNewNestedKey() {
-        OakheartConfig config = OakheartConfig.fromString("""
+        ConfigManager config = ConfigManager.fromString("""
                 parent:
                   child1: value1
                 """);
@@ -95,7 +95,7 @@ class WriteApiTest {
 
     @Test
     void setCreatesIntermediateSections() {
-        OakheartConfig config = OakheartConfig.fromString("""
+        ConfigManager config = ConfigManager.fromString("""
                 existing: true
                 """);
 
@@ -108,7 +108,7 @@ class WriteApiTest {
 
     @Test
     void setListValue() {
-        OakheartConfig config = OakheartConfig.fromString("""
+        ConfigManager config = ConfigManager.fromString("""
                 items:
                   - apple
                   - banana
@@ -122,7 +122,7 @@ class WriteApiTest {
 
     @Test
     void setNewListKey() {
-        OakheartConfig config = OakheartConfig.fromString("""
+        ConfigManager config = ConfigManager.fromString("""
                 name: test
                 """);
 
@@ -134,7 +134,7 @@ class WriteApiTest {
 
     @Test
     void removeKey() {
-        OakheartConfig config = OakheartConfig.fromString("""
+        ConfigManager config = ConfigManager.fromString("""
                 keep: yes
                 remove-me: true
                 also-keep: yes
@@ -149,7 +149,7 @@ class WriteApiTest {
 
     @Test
     void removeSection() {
-        OakheartConfig config = OakheartConfig.fromString("""
+        ConfigManager config = ConfigManager.fromString("""
                 keep: yes
                 section:
                   child1: a
@@ -167,7 +167,7 @@ class WriteApiTest {
 
     @Test
     void setNullValue() {
-        OakheartConfig config = OakheartConfig.fromString("""
+        ConfigManager config = ConfigManager.fromString("""
                 key: value
                 """);
 
@@ -187,7 +187,7 @@ class WriteApiTest {
                   debug: false
                   count: 10
                 # Footer""";
-        OakheartConfig config = OakheartConfig.fromString(original);
+        ConfigManager config = ConfigManager.fromString(original);
 
         config.set("settings.debug", true);
 
@@ -202,7 +202,7 @@ class WriteApiTest {
 
     @Test
     void setStringThatNeedsQuoting() {
-        OakheartConfig config = OakheartConfig.fromString("""
+        ConfigManager config = ConfigManager.fromString("""
                 key: simple
                 """);
 

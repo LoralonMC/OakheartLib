@@ -11,13 +11,13 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests for OakheartConfig read API against real config files.
+ * Tests for ConfigManager read API against real config files.
  */
 class ReadApiTest {
 
     @Test
     void readScalarValues() {
-        OakheartConfig config = loadConfig("RaidCooldown-config.yml");
+        ConfigManager config = loadConfig("RaidCooldown-config.yml");
 
         assertEquals(86400, config.getInt("raid-cooldown-seconds"));
         assertTrue(config.getBoolean("settings.auto-cleanup"));
@@ -29,7 +29,7 @@ class ReadApiTest {
 
     @Test
     void readDefaults() {
-        OakheartConfig config = loadConfig("RaidCooldown-config.yml");
+        ConfigManager config = loadConfig("RaidCooldown-config.yml");
 
         assertEquals("fallback", config.getString("nonexistent.path", "fallback"));
         assertEquals(42, config.getInt("missing", 42));
@@ -39,7 +39,7 @@ class ReadApiTest {
 
     @Test
     void readStringList() {
-        OakheartConfig config = loadConfig("OakRewind-config.yml");
+        ConfigManager config = loadConfig("OakRewind-config.yml");
 
         List<String> types = config.getStringList("enabled-explosion-types");
         assertNotNull(types);
@@ -50,9 +50,9 @@ class ReadApiTest {
 
     @Test
     void readSection() {
-        OakheartConfig config = loadConfig("RaidCooldown-config.yml");
+        ConfigManager config = loadConfig("RaidCooldown-config.yml");
 
-        OakheartConfig settings = config.getSection("settings");
+        ConfigManager settings = config.getSection("settings");
         assertNotNull(settings);
         assertTrue(settings.getBoolean("auto-cleanup"));
         assertEquals(10, settings.getInt("cleanup-interval-minutes"));
@@ -60,9 +60,9 @@ class ReadApiTest {
 
     @Test
     void getKeysShallow() {
-        OakheartConfig config = loadConfig("RaidCooldown-config.yml");
+        ConfigManager config = loadConfig("RaidCooldown-config.yml");
 
-        OakheartConfig settings = config.getSection("settings");
+        ConfigManager settings = config.getSection("settings");
         assertNotNull(settings);
         Set<String> keys = settings.getKeys(false);
         assertTrue(keys.contains("auto-cleanup"));
@@ -72,7 +72,7 @@ class ReadApiTest {
 
     @Test
     void getKeysDeep() {
-        OakheartConfig config = loadConfig("RaidCooldown-config.yml");
+        ConfigManager config = loadConfig("RaidCooldown-config.yml");
 
         Set<String> deepKeys = config.getKeys(true);
         assertTrue(deepKeys.contains("raid-cooldown-seconds"));
@@ -83,7 +83,7 @@ class ReadApiTest {
 
     @Test
     void contains() {
-        OakheartConfig config = loadConfig("RaidCooldown-config.yml");
+        ConfigManager config = loadConfig("RaidCooldown-config.yml");
 
         assertTrue(config.contains("settings"));
         assertTrue(config.contains("settings.auto-cleanup"));
@@ -93,7 +93,7 @@ class ReadApiTest {
 
     @Test
     void isSection() {
-        OakheartConfig config = loadConfig("RaidCooldown-config.yml");
+        ConfigManager config = loadConfig("RaidCooldown-config.yml");
 
         assertTrue(config.isSection("settings"));
         assertTrue(config.isSection("synchronized-reset"));
@@ -115,7 +115,7 @@ class ReadApiTest {
                   - banana
                   - cherry
                 """;
-        OakheartConfig config = OakheartConfig.fromString(yaml);
+        ConfigManager config = ConfigManager.fromString(yaml);
 
         assertEquals("TestPlugin", config.getString("name"));
         assertEquals("1.0.0", config.getString("version"));
@@ -127,12 +127,12 @@ class ReadApiTest {
 
     @Test
     void readNestedSections() {
-        OakheartConfig config = loadConfig("OakTools-config.yml");
+        ConfigManager config = loadConfig("OakTools-config.yml");
 
         // OakTools has deep nesting like tools.wand.undo.enabled
         assertTrue(config.isSection("tools"));
 
-        OakheartConfig tools = config.getSection("tools");
+        ConfigManager tools = config.getSection("tools");
         assertNotNull(tools);
         Set<String> toolKeys = tools.getKeys(false);
         assertFalse(toolKeys.isEmpty());
@@ -140,17 +140,17 @@ class ReadApiTest {
 
     @Test
     void emptyListReturned() {
-        OakheartConfig config = loadConfig("RaidCooldown-config.yml");
+        ConfigManager config = loadConfig("RaidCooldown-config.yml");
         List<String> empty = config.getStringList("nonexistent");
         assertNotNull(empty);
         assertTrue(empty.isEmpty());
     }
 
-    private OakheartConfig loadConfig(String resource) {
+    private ConfigManager loadConfig(String resource) {
         try (InputStream is = getClass().getClassLoader().getResourceAsStream(resource)) {
             assertNotNull(is, "Resource not found: " + resource);
             String text = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-            return OakheartConfig.fromString(text);
+            return ConfigManager.fromString(text);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

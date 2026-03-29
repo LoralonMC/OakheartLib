@@ -13,11 +13,11 @@ class MergeTest {
 
     @Test
     void mergeAddsMissingScalar() {
-        OakheartConfig user = OakheartConfig.fromString("""
+        ConfigManager user = ConfigManager.fromString("""
                 name: MyPlugin
                 debug: false
                 """);
-        OakheartConfig defaults = OakheartConfig.fromString("""
+        ConfigManager defaults = ConfigManager.fromString("""
                 name: MyPlugin
                 debug: false
                 version: 1
@@ -34,10 +34,10 @@ class MergeTest {
 
     @Test
     void mergePreservesUserValues() {
-        OakheartConfig user = OakheartConfig.fromString("""
+        ConfigManager user = ConfigManager.fromString("""
                 cooldown: 30
                 """);
-        OakheartConfig defaults = OakheartConfig.fromString("""
+        ConfigManager defaults = ConfigManager.fromString("""
                 cooldown: 60
                 """);
 
@@ -49,11 +49,11 @@ class MergeTest {
 
     @Test
     void mergeAddsNestedKey() {
-        OakheartConfig user = OakheartConfig.fromString("""
+        ConfigManager user = ConfigManager.fromString("""
                 settings:
                   debug: false
                 """);
-        OakheartConfig defaults = OakheartConfig.fromString("""
+        ConfigManager defaults = ConfigManager.fromString("""
                 settings:
                   debug: false
                   verbose: true
@@ -68,10 +68,10 @@ class MergeTest {
 
     @Test
     void mergeAddsEntireSection() {
-        OakheartConfig user = OakheartConfig.fromString("""
+        ConfigManager user = ConfigManager.fromString("""
                 name: Test
                 """);
-        OakheartConfig defaults = OakheartConfig.fromString("""
+        ConfigManager defaults = ConfigManager.fromString("""
                 name: Test
                 database:
                   type: sqlite
@@ -88,11 +88,11 @@ class MergeTest {
 
     @Test
     void mergePreservesComments() {
-        OakheartConfig user = OakheartConfig.fromString("""
+        ConfigManager user = ConfigManager.fromString("""
                 # User's custom comment
                 name: MyServer
                 """);
-        OakheartConfig defaults = OakheartConfig.fromString("""
+        ConfigManager defaults = ConfigManager.fromString("""
                 name: Default
                 # Port setting
                 port: 8080
@@ -109,11 +109,11 @@ class MergeTest {
 
     @Test
     void mergeInsertsAtCorrectPosition() {
-        OakheartConfig user = OakheartConfig.fromString("""
+        ConfigManager user = ConfigManager.fromString("""
                 a: 1
                 c: 3
                 """);
-        OakheartConfig defaults = OakheartConfig.fromString("""
+        ConfigManager defaults = ConfigManager.fromString("""
                 a: 1
                 b: 2
                 c: 3
@@ -134,10 +134,10 @@ class MergeTest {
 
     @Test
     void mergeAddsMissingList() {
-        OakheartConfig user = OakheartConfig.fromString("""
+        ConfigManager user = ConfigManager.fromString("""
                 name: Test
                 """);
-        OakheartConfig defaults = OakheartConfig.fromString("""
+        ConfigManager defaults = ConfigManager.fromString("""
                 name: Test
                 items:
                   - apple
@@ -153,10 +153,10 @@ class MergeTest {
 
     @Test
     void hasNewKeysDetectsMissing() {
-        OakheartConfig user = OakheartConfig.fromString("""
+        ConfigManager user = ConfigManager.fromString("""
                 a: 1
                 """);
-        OakheartConfig defaults = OakheartConfig.fromString("""
+        ConfigManager defaults = ConfigManager.fromString("""
                 a: 1
                 b: 2
                 """);
@@ -166,11 +166,11 @@ class MergeTest {
 
     @Test
     void hasNewKeysReturnsFalseWhenComplete() {
-        OakheartConfig user = OakheartConfig.fromString("""
+        ConfigManager user = ConfigManager.fromString("""
                 a: 1
                 b: 2
                 """);
-        OakheartConfig defaults = OakheartConfig.fromString("""
+        ConfigManager defaults = ConfigManager.fromString("""
                 a: 1
                 b: 2
                 """);
@@ -181,14 +181,14 @@ class MergeTest {
     @Test
     void mergeSkipsUserCustomizedSections() {
         // User has replaced default pet entries with their own
-        OakheartConfig user = OakheartConfig.fromString("""
+        ConfigManager user = ConfigManager.fromString("""
                 pets:
                   my_custom_pet:
                     display: CustomPet
                   another_pet:
                     display: Another
                 """);
-        OakheartConfig defaults = OakheartConfig.fromString("""
+        ConfigManager defaults = ConfigManager.fromString("""
                 pets:
                   zombie_pet:
                     display: ZombiePet
@@ -207,10 +207,10 @@ class MergeTest {
 
     @Test
     void mergeHandlesMultipleMissingKeys() {
-        OakheartConfig user = OakheartConfig.fromString("""
+        ConfigManager user = ConfigManager.fromString("""
                 a: 1
                 """);
-        OakheartConfig defaults = OakheartConfig.fromString("""
+        ConfigManager defaults = ConfigManager.fromString("""
                 a: 1
                 b: 2
                 c: 3
@@ -239,8 +239,8 @@ class MergeTest {
                 settings:
                   debug: false""";
 
-        OakheartConfig user = OakheartConfig.fromString(userYaml);
-        OakheartConfig defaults = OakheartConfig.fromString("""
+        ConfigManager user = ConfigManager.fromString(userYaml);
+        ConfigManager defaults = ConfigManager.fromString("""
                 name: DefaultName
                 settings:
                   debug: false
