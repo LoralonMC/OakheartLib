@@ -199,7 +199,7 @@ public final class YamlParser {
         // Walk the stack from top to find the owning sequence
         for (int s = stack.size() - 1; s >= 0; s--) {
             StackEntry entry = stack.get(s);
-            if (entry.node.getType() == NodeType.SEQUENCE && entry.indent < indent) {
+            if (entry.node.getType() == NodeType.SEQUENCE && entry.indent <= indent) {
                 parent = entry.node;
                 // Pop everything above this entry
                 while (stack.size() > s + 1) stack.removeLast();
@@ -355,10 +355,11 @@ public final class YamlParser {
     private static YamlNode findLastSequenceChild(YamlNode mapNode, int dashIndent) {
         if (mapNode.getType() != NodeType.MAP) return null;
 
-        // Find the last SEQUENCE child whose indent is less than the dash indent
+        // Find the last SEQUENCE child whose indent is less than or equal to the dash indent
+        // (equal handles Configurate-style formatting where dashes are at the same indent as the key)
         YamlNode lastSeq = null;
         for (YamlNode child : mapNode.getChildren().values()) {
-            if (child.getType() == NodeType.SEQUENCE && child.getIndent() < dashIndent) {
+            if (child.getType() == NodeType.SEQUENCE && child.getIndent() <= dashIndent) {
                 lastSeq = child;
             }
         }
@@ -376,13 +377,19 @@ public final class YamlParser {
             if (next.isBlank() || next.isComment()) continue;
 
             int nextIndent = next.indent();
-            if (nextIndent <= currentIndent) {
-                return ChildType.NONE; // Same or less indent = null scalar
+            String nextTrimmed = next.text().stripLeading();
+
+            // Sequence items at same or greater indent are children
+            // (Configurate and some YAML writers put list items at the same indent as the key)
+            if (nextTrimmed.startsWith("- ") || nextTrimmed.equals("-")) {
+                if (nextIndent >= currentIndent) {
+                    return ChildType.SEQUENCE;
+                }
+                return ChildType.NONE;
             }
 
-            String nextTrimmed = next.text().stripLeading();
-            if (nextTrimmed.startsWith("- ") || nextTrimmed.equals("-")) {
-                return ChildType.SEQUENCE;
+            if (nextIndent <= currentIndent) {
+                return ChildType.NONE; // Same or less indent = null scalar
             }
             return ChildType.MAP;
         }

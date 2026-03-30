@@ -221,4 +221,53 @@ class EdgeCaseTest {
         assertTrue(keys.contains("b"));
         assertFalse(keys.contains("a")); // sections excluded from deep keys
     }
+
+    // --- Configurate-style formatting (zero-indent lists) ---
+
+    @Test
+    void zeroIndentSequence() {
+        // Configurate writes list items at the same indent as the key
+        ConfigManager config = ConfigManager.fromString("""
+                enabled-types:
+                - CREEPER
+                - TNT
+                - FIREBALL
+                other-key: value""");
+
+        List<String> types = config.getStringList("enabled-types");
+        assertEquals(3, types.size());
+        assertTrue(types.contains("CREEPER"));
+        assertTrue(types.contains("TNT"));
+        assertTrue(types.contains("FIREBALL"));
+        assertEquals("value", config.getString("other-key"));
+    }
+
+    @Test
+    void configurateDamagedMultilineValue() {
+        // Configurate wraps long values across multiple lines
+        // The parser should handle this gracefully (value is first line only,
+        // continuation lines are treated as separate keys/ignored)
+        String yaml = """
+                key: some long value that
+                other: value""";
+
+        // This should at least not crash — the continuation "other: value"
+        // is at root level so it becomes a separate key
+        ConfigManager config = ConfigManager.fromString(yaml);
+        assertNotNull(config.getString("key"));
+        assertEquals("value", config.getString("other"));
+    }
+
+    @Test
+    void zeroIndentSequenceRoundTrip() {
+        String yaml = """
+                key:
+                - a
+                - b
+                - c
+                other: value""";
+
+        YamlDocument doc = YamlParser.parse(yaml);
+        assertEquals(yaml, doc.serialize());
+    }
 }
