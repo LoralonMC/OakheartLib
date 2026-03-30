@@ -554,21 +554,21 @@ public final class YamlParser {
         if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
             throw new YamlParseException("Flow-style collections are not supported", lineNumber, rawText);
         }
-        // Anchors and aliases
-        if (trimmed.contains("&") && !trimmed.contains("'") && !trimmed.contains("\"")) {
-            // Simple heuristic: & outside quotes likely means anchor
-            int ampIdx = trimmed.indexOf('&');
-            if (ampIdx >= 0) {
-                // Check it's not inside a value after colon
-                int colonIdx = findKeyColonIndex(trimmed);
-                if (ampIdx < colonIdx || colonIdx < 0) {
-                    // Could be an anchor in key position - but be lenient for values
-                }
+        // Anchors: & in the key portion (before the colon) indicates an anchor
+        int colonPos = findKeyColonIndex(trimmed);
+        if (colonPos > 0) {
+            String keyPart = trimmed.substring(0, colonPos);
+            if (keyPart.contains("&")) {
+                throw new YamlParseException("YAML anchors (&) are not supported", lineNumber, rawText);
             }
-        }
-        if (trimmed.startsWith("*") && !trimmed.startsWith("*:")) {
-            // Alias reference
-            // Be careful: * can appear in values, only reject standalone aliases
+            // Alias reference as value: "key: *alias"
+            String valuePart = trimmed.substring(colonPos + 1).stripLeading();
+            if (valuePart.startsWith("*") && valuePart.length() > 1 && Character.isLetterOrDigit(valuePart.charAt(1))) {
+                throw new YamlParseException("YAML aliases (*) are not supported", lineNumber, rawText);
+            }
+        } else if (trimmed.startsWith("*") && trimmed.length() > 1 && Character.isLetterOrDigit(trimmed.charAt(1))) {
+            // Standalone alias reference
+            throw new YamlParseException("YAML aliases (*) are not supported", lineNumber, rawText);
         }
         // Block scalars
         if (trimmed.endsWith("|") || trimmed.endsWith(">") || trimmed.endsWith("|-") || trimmed.endsWith(">-")) {

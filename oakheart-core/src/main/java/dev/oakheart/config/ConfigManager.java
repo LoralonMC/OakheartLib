@@ -29,23 +29,23 @@ public final class ConfigManager {
     private final Path filePath;
     private final Object lock = new Object();
 
-    // For section views only: the base node for path resolution (null = use document root)
-    private final YamlNode baseNode;
+    // For section views: the dot-path to resolve from root (null = root)
+    private final String basePath;
     // Reference to the owning config (for section views that share the document)
     private final ConfigManager owner;
 
     private ConfigManager(YamlDocument document, Path filePath) {
         this.document = document;
         this.filePath = filePath;
-        this.baseNode = null;
+        this.basePath = null;
         this.owner = null;
     }
 
     // Section view constructor
-    private ConfigManager(YamlDocument document, Path filePath, YamlNode baseNode, ConfigManager owner) {
-        this.document = document;
+    private ConfigManager(Path filePath, String basePath, ConfigManager owner) {
+        this.document = null; // uses owner's document
         this.filePath = filePath;
-        this.baseNode = baseNode;
+        this.basePath = basePath;
         this.owner = owner;
     }
 
@@ -154,6 +154,44 @@ public final class ConfigManager {
         return node.asIntList();
     }
 
+    /**
+     * Get a list of map items at the given path.
+     * Each map item is returned as a {@code Map<String, Object>} with scalar values.
+     * Returns an empty list if the path does not exist or is not a sequence of maps.
+     *
+     * <p>This is the public API for accessing sequence-of-maps structures like:</p>
+     * <pre>
+     * drops:
+     *   - id: zombie_pet
+     *     chance: 0.001
+     *   - id: skeleton_pet
+     *     chance: 0.002
+     * </pre>
+     */
+    public List<Map<String, Object>> getMapList(String path) {
+        YamlNode node = resolve(path);
+        if (node == null || node.getType() != NodeType.SEQUENCE) {
+            return Collections.emptyList();
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (YamlNode item : node.getItems()) {
+            if (item.getType() == NodeType.MAP) {
+                Map<String, Object> map = new LinkedHashMap<>();
+                for (var entry : item.getChildren().entrySet()) {
+                    YamlNode child = entry.getValue();
+                    if (child.getType() == NodeType.SCALAR) {
+                        map.put(entry.getKey(), child.getRawValue());
+                    } else if (child.getType() == NodeType.SEQUENCE) {
+                        map.put(entry.getKey(), child.asStringList());
+                    }
+                    // Nested maps are not flattened — access via getMapList for deeper structures
+                }
+                result.add(map);
+            }
+        }
+        return result;
+    }
+
     // ========================================
     //          Section / Structure Access
     // ========================================
@@ -167,7 +205,10 @@ public final class ConfigManager {
         YamlNode node = resolve(path);
         if (node == null || node.getType() != NodeType.MAP) return null;
         ConfigManager root = owner != null ? owner : this;
-        return new ConfigManager(document, filePath, node, root);
+        // Build full path for the section view
+        String fullPath = (basePath != null && !basePath.isEmpty())
+                ? basePath + "." + path : path;
+        return new ConfigManager(filePath, fullPath, root);
     }
 
     /**
@@ -332,6 +373,12 @@ public final class ConfigManager {
             // Remove old items, insert new ones
             removeSequenceItems(existing, doc);
             insertSequenceItems(existing, values, doc);
+        } else if (existing != null && existing.getType() == NodeType.SCALAR) {
+            throw new IllegalArgumentException(
+                    "Cannot overwrite scalar '" + path + "' with a list. Use remove() first.");
+        } else if (existing != null && existing.getType() == NodeType.MAP) {
+            throw new IllegalArgumentException(
+                    "Cannot overwrite section '" + path + "' with a list. Use remove() first.");
         } else if (existing == null) {
             // Insert new key as a sequence
             insertNewSequence(path, values, doc);
@@ -616,11 +663,22 @@ public final class ConfigManager {
      * Navigate to a node by dot-separated path, relative to the base node.
      */
     private YamlNode getBaseNode() {
-        return baseNode != null ? baseNode : getDocument().getRoot();
+        YamlNode root = getDocument().getRoot();
+        if (basePath == null) return root;
+        // Resolve the base path from root each time (reload-safe)
+        YamlNode current = root;
+        for (String segment : YamlPath.segments(basePath)) {
+            if (segment.isEmpty()) continue;
+            if (current.getType() != NodeType.MAP) return null;
+            current = current.getChild(segment);
+            if (current == null) return null;
+        }
+        return current;
     }
 
     private YamlNode resolve(String path) {
         YamlNode base = getBaseNode();
+        if (base == null) return null;
         if (path == null || path.isEmpty()) return base;
 
         String[] segments = YamlPath.segments(path);

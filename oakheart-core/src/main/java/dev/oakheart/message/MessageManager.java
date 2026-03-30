@@ -167,6 +167,9 @@ public class MessageManager {
     /**
      * Parse a gameplay message template and return as a Component.
      * Returns {@code Optional.empty()} if the message is null or empty (disabled).
+     *
+     * <p>This method does NOT suppress italic inheritance. Use {@link #deserialize(String, TagResolver...)}
+     * for item names and lore where Minecraft's default italic needs to be removed.</p>
      */
     public Optional<Component> parse(String key, TagResolver... resolvers) {
         String text = getMessageText(key);
@@ -175,8 +178,11 @@ public class MessageManager {
     }
 
     /**
-     * Parse a raw MiniMessage string (not from config). Useful for config values
-     * that contain MiniMessage formatting but aren't in messages.yml.
+     * Parse a raw MiniMessage string (not from config). Use this for item display names
+     * and lore where Minecraft's default italic inheritance needs to be suppressed.
+     *
+     * <p>Unlike {@link #parse(String, TagResolver...)}, this method applies
+     * {@code decorationIfAbsent(ITALIC, FALSE)} to prevent inherited italic on items.</p>
      */
     public Component deserialize(String text, TagResolver... resolvers) {
         return MINI_MESSAGE.deserialize(text, resolvers)

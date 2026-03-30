@@ -7,7 +7,7 @@ A shared library for [Oakheart SMP](https://github.com/LoralonMC) Paper plugins.
 | Module | Artifact | Description |
 |--------|----------|-------------|
 | **oakheart-core** | `dev.oakheart:oakheart-core` | Config engine, message helpers, command registration, debug logging |
-| **oakheart-models** | `dev.oakheart:oakheart-models` | Model provider system (Nexo, ItemsAdder, vanilla) — coming soon |
+| **oakheart-models** | `dev.oakheart:oakheart-models` | Model provider system (Nexo, ItemsAdder, vanilla, Item Model) |
 
 ## oakheart-core
 

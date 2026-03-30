@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * A parsed YAML document maintaining both a line-based representation
- * (for byte-perfect file preservation) and a tree representation
+ * (for structure/comment/formatting preservation) and a tree representation
  * (for programmatic access).
  *
  * <p>The two representations are kept in sync: modifications through the
