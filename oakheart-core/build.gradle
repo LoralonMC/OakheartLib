@@ -1,0 +1,9 @@
+archivesBaseName = 'oakheart-core'
+
+publishing {
+    publications {
+        maven {
+            artifactId = 'oakheart-core'
+        }
+    }
+}

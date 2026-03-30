@@ -1,0 +1,9 @@
+archivesBaseName = 'oakheart-models'
+
+publishing {
+    publications {
+        maven {
+            artifactId = 'oakheart-models'
+        }
+    }
+}
