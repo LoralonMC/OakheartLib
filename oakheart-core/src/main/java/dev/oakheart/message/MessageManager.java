@@ -121,89 +121,55 @@ public class MessageManager {
         if (!configPath.toFile().exists()) return false;
 
         try {
-            java.util.List<String> lines = Files.readAllLines(configPath, StandardCharsets.UTF_8);
+            // Check if config.yml has a messages: section
+            ConfigManager oldConfig = ConfigManager.load(configPath);
+            ConfigManager oldMessages = oldConfig.getSection("messages");
+            if (oldMessages == null) return false;
 
-            // Find the "messages:" line at the root level (no indentation)
-            int messagesStart = -1;
-            for (int i = 0; i < lines.size(); i++) {
-                String line = lines.get(i);
-                if (line.equals("messages:") || line.startsWith("messages: ")) {
-                    messagesStart = i;
-                    break;
+            // Extract the JAR's messages.yml as the template (perfect structure)
+            try (var stream = plugin.getResource("messages.yml")) {
+                if (stream == null) return false;
+                // saveResource to create the file with perfect JAR formatting
+                plugin.saveResource("messages.yml", false);
+            }
+
+            // Load the new messages.yml template
+            ConfigManager newMessages = ConfigManager.load(messagesFile);
+
+            // Walk all leaf keys in the new file and overlay old values where they exist
+            boolean changed = false;
+            for (String key : newMessages.getKeys(true)) {
+                // Try to find the old value: the old config stored messages under "messages.<key>"
+                String oldValue = oldMessages.getString(key);
+                if (oldValue != null) {
+                    String newValue = newMessages.getString(key);
+                    if (!oldValue.equals(newValue)) {
+                        newMessages.set(key, oldValue);
+                        changed = true;
+                    }
                 }
-            }
 
-            if (messagesStart < 0) return false;
-
-            // Include preceding comment/blank lines that belong to the messages section
-            int sectionStart = messagesStart;
-            for (int i = messagesStart - 1; i >= 0; i--) {
-                String line = lines.get(i);
-                if (line.isBlank() || line.stripLeading().startsWith("#")) {
-                    sectionStart = i;
-                } else {
-                    break;
-                }
-            }
-
-            // Find where the messages section ends (next root-level key or EOF)
-            int sectionEnd = lines.size();
-            for (int i = messagesStart + 1; i < lines.size(); i++) {
-                String line = lines.get(i);
-                if (line.isBlank() || line.stripLeading().startsWith("#")) continue;
-                // Non-blank, non-comment line at root level = section ended
-                if (!line.startsWith(" ") && !line.startsWith("\t")) {
-                    sectionEnd = i;
-                    break;
-                }
-            }
-
-            // Extract messages content (lines after "messages:"), reducing indent by 2
-            java.util.List<String> messageLines = new ArrayList<>();
-
-            // Add any header comments that were above "messages:" in config.yml
-            for (int i = sectionStart; i < messagesStart; i++) {
-                messageLines.add(lines.get(i));
-            }
-
-            // Add the content under "messages:" with indent reduced by 2
-            for (int i = messagesStart + 1; i < sectionEnd; i++) {
-                String line = lines.get(i);
-                if (line.isBlank()) {
-                    messageLines.add(line);
-                } else {
-                    // Reduce indentation by 2 spaces
-                    if (line.startsWith("  ")) {
-                        messageLines.add(line.substring(2));
-                    } else {
-                        messageLines.add(line);
+                // For command messages (commands.xyz), also check if the old config had
+                // a gameplay version (messages.xyz.text) that was moved to commands
+                if (key.startsWith("commands.")) {
+                    String commandKey = key.substring("commands.".length());
+                    String oldGameplayText = oldMessages.getString(commandKey + ".text");
+                    if (oldGameplayText != null) {
+                        String newValue = newMessages.getString(key);
+                        if (!oldGameplayText.equals(newValue)) {
+                            newMessages.set(key, oldGameplayText);
+                            changed = true;
+                        }
                     }
                 }
             }
 
-            // Remove trailing blank lines
-            while (!messageLines.isEmpty() && messageLines.getLast().isBlank()) {
-                messageLines.removeLast();
+            if (changed) {
+                newMessages.save();
             }
-
-            if (messageLines.isEmpty()) return false;
-
-            // Write messages.yml
-            Files.writeString(messagesFile, String.join("\n", messageLines) + "\n", StandardCharsets.UTF_8);
 
             // Remove the messages section from config.yml
-            java.util.List<String> remainingLines = new ArrayList<>();
-            for (int i = 0; i < sectionStart; i++) {
-                remainingLines.add(lines.get(i));
-            }
-            // Remove trailing blank lines from remaining config
-            while (!remainingLines.isEmpty() && remainingLines.getLast().isBlank()) {
-                remainingLines.removeLast();
-            }
-            for (int i = sectionEnd; i < lines.size(); i++) {
-                remainingLines.add(lines.get(i));
-            }
-            Files.writeString(configPath, String.join("\n", remainingLines) + "\n", StandardCharsets.UTF_8);
+            removeMessagesFromConfig(configPath);
 
             logger.info("Migrated messages from config.yml to messages.yml");
             return true;
@@ -211,6 +177,60 @@ public class MessageManager {
             logger.log(Level.WARNING, "Failed to migrate messages from config.yml", e);
             return false;
         }
+    }
+
+    /**
+     * Remove the messages: section and its preceding header comments from config.yml.
+     */
+    private void removeMessagesFromConfig(Path configPath) throws IOException {
+        java.util.List<String> lines = Files.readAllLines(configPath, StandardCharsets.UTF_8);
+
+        // Find the "messages:" line
+        int messagesStart = -1;
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (line.equals("messages:") || line.startsWith("messages: ")) {
+                messagesStart = i;
+                break;
+            }
+        }
+
+        if (messagesStart < 0) return;
+
+        // Find preceding comment/blank lines
+        int sectionStart = messagesStart;
+        for (int i = messagesStart - 1; i >= 0; i--) {
+            String line = lines.get(i);
+            if (line.isBlank() || line.stripLeading().startsWith("#")) {
+                sectionStart = i;
+            } else {
+                break;
+            }
+        }
+
+        // Find where the section ends
+        int sectionEnd = lines.size();
+        for (int i = messagesStart + 1; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (line.isBlank() || line.stripLeading().startsWith("#")) continue;
+            if (!line.startsWith(" ") && !line.startsWith("\t")) {
+                sectionEnd = i;
+                break;
+            }
+        }
+
+        // Rebuild config.yml without the messages section
+        java.util.List<String> remainingLines = new ArrayList<>();
+        for (int i = 0; i < sectionStart; i++) {
+            remainingLines.add(lines.get(i));
+        }
+        while (!remainingLines.isEmpty() && remainingLines.getLast().isBlank()) {
+            remainingLines.removeLast();
+        }
+        for (int i = sectionEnd; i < lines.size(); i++) {
+            remainingLines.add(lines.get(i));
+        }
+        Files.writeString(configPath, String.join("\n", remainingLines) + "\n", StandardCharsets.UTF_8);
     }
 
     private void mergeDefaults() {
