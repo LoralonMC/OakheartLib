@@ -85,9 +85,10 @@ public final class YamlParser {
             // Determine if this is a sequence item or a map entry
             if (trimmed.startsWith("- ") || trimmed.equals("-")) {
                 parseSequenceItem(lines, i, indent, trimmed, root, stack, pendingComments);
-            } else {
+            } else if (findKeyColonIndex(trimmed) >= 0) {
                 parseMapEntry(lines, i, indent, trimmed, root, stack, pendingComments);
             }
+            // else: continuation line from a wrapped value (e.g. Configurate formatting) — skip
         }
 
         // Any remaining pending comments are trailing - attach to document
