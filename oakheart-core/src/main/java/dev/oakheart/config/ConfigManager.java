@@ -29,7 +29,7 @@ public final class ConfigManager {
     private final Path filePath;
     private final Object lock = new Object();
 
-    // For section views: the base node for path resolution
+    // For section views only: the base node for path resolution (null = use document root)
     private final YamlNode baseNode;
     // Reference to the owning config (for section views that share the document)
     private final ConfigManager owner;
@@ -37,7 +37,7 @@ public final class ConfigManager {
     private ConfigManager(YamlDocument document, Path filePath) {
         this.document = document;
         this.filePath = filePath;
-        this.baseNode = document.getRoot();
+        this.baseNode = null;
         this.owner = null;
     }
 
@@ -178,7 +178,7 @@ public final class ConfigManager {
      * @return set of key names in insertion order
      */
     public Set<String> getKeys(String path, boolean deep) {
-        YamlNode node = (path == null || path.isEmpty()) ? baseNode : resolve(path);
+        YamlNode node = (path == null || path.isEmpty()) ? getBaseNode() : resolve(path);
         if (node == null || node.getType() != NodeType.MAP) {
             return Collections.emptySet();
         }
@@ -273,7 +273,7 @@ public final class ConfigManager {
             String[] segments = YamlPath.segments(path);
 
             // Find the parent and the target node
-            YamlNode parent = baseNode;
+            YamlNode parent = getBaseNode();
             for (int i = 0; i < segments.length - 1; i++) {
                 if (parent.getType() != NodeType.MAP) return;
                 parent = parent.getChild(segments[i]);
@@ -377,7 +377,7 @@ public final class ConfigManager {
         String[] segments = YamlPath.segments(path);
 
         // Walk down, creating intermediate MAP sections as needed
-        YamlNode current = baseNode;
+        YamlNode current = getBaseNode();
         int lastExistingDepth = -1;
 
         for (int i = 0; i < segments.length - 1; i++) {
@@ -387,7 +387,7 @@ public final class ConfigManager {
                 lastExistingDepth = i;
             } else if (child == null) {
                 // Need to create intermediate section
-                int parentIndent = current == baseNode ? -2 : current.getIndent();
+                int parentIndent = current == getBaseNode() ? -2 : current.getIndent();
                 int newIndent = parentIndent + 2;
                 int insertAt = findInsertionPoint(current, doc);
 
@@ -407,7 +407,7 @@ public final class ConfigManager {
 
         // Insert the final key
         String finalKey = segments[segments.length - 1];
-        int parentIndent = current == baseNode ? -2 : current.getIndent();
+        int parentIndent = current == getBaseNode() ? -2 : current.getIndent();
         int newIndent = parentIndent + 2;
         int insertAt = findInsertionPoint(current, doc);
         String indentStr = newIndent >= 0 ? " ".repeat(newIndent) : "";
@@ -426,13 +426,13 @@ public final class ConfigManager {
         String[] segments = YamlPath.segments(path);
 
         // Walk down, creating intermediate MAP sections as needed
-        YamlNode current = baseNode;
+        YamlNode current = getBaseNode();
         for (int i = 0; i < segments.length - 1; i++) {
             YamlNode child = current.getChild(segments[i]);
             if (child != null && child.getType() == NodeType.MAP) {
                 current = child;
             } else if (child == null) {
-                int parentIndent = current == baseNode ? -2 : current.getIndent();
+                int parentIndent = current == getBaseNode() ? -2 : current.getIndent();
                 int newIndent = parentIndent + 2;
                 int insertAt = findInsertionPoint(current, doc);
 
@@ -450,7 +450,7 @@ public final class ConfigManager {
 
         // Insert sequence key line
         String finalKey = segments[segments.length - 1];
-        int parentIndent = current == baseNode ? -2 : current.getIndent();
+        int parentIndent = current == getBaseNode() ? -2 : current.getIndent();
         int newIndent = parentIndent + 2;
         int insertAt = findInsertionPoint(current, doc);
         String indentStr = newIndent >= 0 ? " ".repeat(newIndent) : "";
@@ -612,11 +612,16 @@ public final class ConfigManager {
     /**
      * Navigate to a node by dot-separated path, relative to the base node.
      */
+    private YamlNode getBaseNode() {
+        return baseNode != null ? baseNode : getDocument().getRoot();
+    }
+
     private YamlNode resolve(String path) {
-        if (path == null || path.isEmpty()) return baseNode;
+        YamlNode base = getBaseNode();
+        if (path == null || path.isEmpty()) return base;
 
         String[] segments = YamlPath.segments(path);
-        YamlNode current = baseNode;
+        YamlNode current = base;
 
         for (String segment : segments) {
             if (segment.isEmpty()) continue;
