@@ -1,5 +1,26 @@
 archivesBaseName = 'oakheart-models'
 
+repositories {
+    maven {
+        name = "papermc-repo"
+        url = "https://repo.papermc.io/repository/maven-public/"
+    }
+    maven {
+        name = "nexo-repo"
+        url = "https://repo.nexomc.com/releases/"
+    }
+    maven {
+        name = "jitpack"
+        url = "https://jitpack.io"
+    }
+}
+
+dependencies {
+    compileOnly 'io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT'
+    compileOnly 'com.nexomc:nexo:1.20.0'
+    compileOnly 'com.github.LoneDev6:api-itemsadder:3.6.3-beta-14'
+}
+
 publishing {
     publications {
         maven {
