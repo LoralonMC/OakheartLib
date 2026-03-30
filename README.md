@@ -35,7 +35,7 @@ if (config.mergeDefaults(defaults)) {
 }
 ```
 
-Supported YAML: block-style maps/sequences (scalar items only — sequences of maps are not supported), scalars (strings, numbers, booleans, null), comments, blank lines, quoted strings. Not supported (by design): flow-style, anchors, block scalars, merge keys, tags, tabs, sequences of maps. Line endings are normalized to `\n` on load.
+Supported YAML: block-style maps/sequences (including sequences of maps), scalars (strings, numbers, booleans, null), comments, blank lines, quoted strings. Not supported (by design): flow-style, anchors, block scalars, merge keys, tags, tabs. Line endings are normalized to `\n` on load.
 
 ### Message Manager (`dev.oakheart.message`)
 

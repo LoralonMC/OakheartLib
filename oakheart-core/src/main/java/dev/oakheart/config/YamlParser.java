@@ -15,8 +15,7 @@ import java.util.Locale;
  * </ul>
  *
  * <p><strong>Not supported (by design):</strong> anchors, aliases, flow-style collections,
- * block scalars (| and >), merge keys, tags, complex keys, tabs for indentation,
- * sequences of maps (list items are always scalars).</p>
+ * block scalars (| and >), merge keys, tags, complex keys, tabs for indentation.</p>
  */
 public final class YamlParser {
 
@@ -245,12 +244,109 @@ public final class YamlParser {
             }
         }
 
-        YamlNode item = new YamlNode(null, NodeType.SCALAR, lineIndex, indent);
-        parseAndSetScalar(item, rawValue);
-        item.setInlineComment(inlineComment);
-        item.setLeadingCommentLines(new ArrayList<>(pendingComments));
-        pendingComments.clear();
-        parent.addItem(item);
+        // Determine if this is a scalar item or a map item
+        // Map item: "- key: value" where itemContent contains a colon
+        int colonIdx = findKeyColonIndex(rawValue);
+        boolean isMapItem = colonIdx > 0;
+
+        // Also check: if itemContent is "key:" with children on next lines
+        if (!isMapItem && colonIdx < 0 && !rawValue.isEmpty()) {
+            // Could be "- key:" (empty value) — check if it looks like a key
+            // by seeing if the raw value ends with ":"
+            // Actually, findKeyColonIndex returns the colon position even for "key:"
+            // Let's re-check with the original itemContent
+            colonIdx = findKeyColonIndex(itemContent);
+            if (colonIdx > 0) {
+                isMapItem = true;
+                rawValue = itemContent; // use full content including potential inline comment
+                inlineComment = null; // re-parse inline comment below
+            }
+        }
+
+        if (isMapItem) {
+            // This is a map item in a sequence (e.g., "- id: zombie_pet")
+            // Create a MAP node for this list item
+            // The indent for child keys is the indent of the content after "- "
+            int mapItemIndent = indent + 2; // "- " takes 2 chars
+
+            YamlNode mapItem = new YamlNode(null, NodeType.MAP, lineIndex, indent);
+            mapItem.setLeadingCommentLines(new ArrayList<>(pendingComments));
+            pendingComments.clear();
+            parent.addItem(mapItem);
+
+            // Parse the first key-value pair as a child of this map item
+            String firstKey = rawValue.substring(0, colonIdx).stripTrailing();
+            String afterColon = rawValue.substring(colonIdx + 1);
+            String firstValuePart = afterColon.stripLeading();
+
+            // Extract inline comment from first value
+            String firstInlineComment = null;
+            String firstRawValue = firstValuePart;
+            if (!firstValuePart.isEmpty()) {
+                if (firstValuePart.charAt(0) != '\'' && firstValuePart.charAt(0) != '"') {
+                    int commentIdx = findInlineCommentIndex(firstValuePart);
+                    if (commentIdx >= 0) {
+                        firstRawValue = firstValuePart.substring(0, commentIdx).stripTrailing();
+                        firstInlineComment = firstValuePart.substring(commentIdx);
+                    }
+                } else {
+                    int endQuote = findClosingQuote(firstValuePart);
+                    if (endQuote >= 0 && endQuote + 1 < firstValuePart.length()) {
+                        String afterQuote = firstValuePart.substring(endQuote + 1).stripLeading();
+                        if (afterQuote.startsWith("#")) {
+                            firstInlineComment = afterQuote;
+                            firstRawValue = firstValuePart.substring(0, endQuote + 1);
+                        }
+                    }
+                }
+            }
+
+            if (firstRawValue.isEmpty()) {
+                // "- key:" with empty value — could be a sub-map or sub-sequence or null
+                ChildType childType = peekChildType(lines, lineIndex, mapItemIndent);
+                switch (childType) {
+                    case SEQUENCE -> {
+                        YamlNode child = new YamlNode(firstKey, NodeType.SEQUENCE, lineIndex, mapItemIndent);
+                        child.setInlineComment(firstInlineComment);
+                        mapItem.addChild(firstKey, child);
+                        // Push both the map item and the sequence onto the stack
+                        stack.add(new StackEntry(indent, mapItem));
+                        stack.add(new StackEntry(mapItemIndent, child));
+                    }
+                    case MAP -> {
+                        YamlNode child = new YamlNode(firstKey, NodeType.MAP, lineIndex, mapItemIndent);
+                        child.setInlineComment(firstInlineComment);
+                        mapItem.addChild(firstKey, child);
+                        stack.add(new StackEntry(indent, mapItem));
+                        stack.add(new StackEntry(mapItemIndent, child));
+                    }
+                    case NONE -> {
+                        YamlNode child = new YamlNode(firstKey, NodeType.SCALAR, lineIndex, mapItemIndent);
+                        child.setScalarValue(null, YamlNode.QuoteStyle.UNQUOTED);
+                        child.setInlineComment(firstInlineComment);
+                        mapItem.addChild(firstKey, child);
+                        stack.add(new StackEntry(indent, mapItem));
+                    }
+                }
+            } else {
+                // "- key: value" with a scalar value on the same line
+                YamlNode child = new YamlNode(firstKey, NodeType.SCALAR, lineIndex, mapItemIndent);
+                parseAndSetScalar(child, firstRawValue);
+                child.setInlineComment(firstInlineComment);
+                mapItem.addChild(firstKey, child);
+
+                // Push the map item onto the stack so subsequent indented lines become its children
+                stack.add(new StackEntry(indent, mapItem));
+            }
+        } else {
+            // Simple scalar item
+            YamlNode item = new YamlNode(null, NodeType.SCALAR, lineIndex, indent);
+            parseAndSetScalar(item, rawValue);
+            item.setInlineComment(inlineComment);
+            item.setLeadingCommentLines(new ArrayList<>(pendingComments));
+            pendingComments.clear();
+            parent.addItem(item);
+        }
     }
 
     /**
