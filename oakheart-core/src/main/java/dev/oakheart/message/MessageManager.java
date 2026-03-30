@@ -136,12 +136,23 @@ public class MessageManager {
             // Load the new messages.yml template
             ConfigManager newMessages = ConfigManager.load(messagesFile);
 
+            // Check if old messages used a <prefix> placeholder that needs resolving
+            String oldPrefix = oldMessages.getString("prefix");
+            String oldErrorPrefix = oldMessages.getString("error-prefix");
+
             // Walk all leaf keys in the new file and overlay old values where they exist
             boolean changed = false;
             for (String key : newMessages.getKeys(true)) {
                 // Try to find the old value: the old config stored messages under "messages.<key>"
                 String oldValue = oldMessages.getString(key);
                 if (oldValue != null) {
+                    // Resolve <prefix> and <error-prefix> placeholders inline
+                    if (oldPrefix != null) {
+                        oldValue = oldValue.replace("<prefix>", oldPrefix);
+                    }
+                    if (oldErrorPrefix != null) {
+                        oldValue = oldValue.replace("<error-prefix>", oldErrorPrefix);
+                    }
                     String newValue = newMessages.getString(key);
                     if (!oldValue.equals(newValue)) {
                         newMessages.set(key, oldValue);
@@ -155,6 +166,13 @@ public class MessageManager {
                     String commandKey = key.substring("commands.".length());
                     String oldGameplayText = oldMessages.getString(commandKey + ".text");
                     if (oldGameplayText != null) {
+                        // Resolve prefix placeholders
+                        if (oldPrefix != null) {
+                            oldGameplayText = oldGameplayText.replace("<prefix>", oldPrefix);
+                        }
+                        if (oldErrorPrefix != null) {
+                            oldGameplayText = oldGameplayText.replace("<error-prefix>", oldErrorPrefix);
+                        }
                         String newValue = newMessages.getString(key);
                         if (!oldGameplayText.equals(newValue)) {
                             newMessages.set(key, oldGameplayText);
