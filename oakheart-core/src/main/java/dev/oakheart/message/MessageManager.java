@@ -11,8 +11,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,12 +74,15 @@ public class MessageManager {
     }
 
     /**
-     * Load messages.yml from disk. Extracts the default from the JAR if it doesn't exist,
-     * then merges any new keys from the JAR defaults.
+     * Load messages.yml from disk. If messages.yml doesn't exist, checks for a legacy
+     * {@code messages:} section in config.yml and migrates it automatically. Otherwise,
+     * extracts the default from the JAR. Then merges any new keys from the JAR defaults.
      */
     public void load() {
         if (!messagesFile.toFile().exists()) {
-            plugin.saveResource("messages.yml", false);
+            if (!migrateFromConfig()) {
+                plugin.saveResource("messages.yml", false);
+            }
         }
 
         try {
@@ -101,6 +107,110 @@ public class MessageManager {
         }
         mergeDefaults();
         cache.clear();
+    }
+
+    /**
+     * Migrate messages from a legacy config.yml {@code messages:} section to messages.yml.
+     * Reads config.yml as raw lines, extracts the messages section (reducing indent by 2),
+     * writes to messages.yml, and removes the section from config.yml.
+     *
+     * @return true if migration was performed
+     */
+    private boolean migrateFromConfig() {
+        Path configPath = plugin.getDataFolder().toPath().resolve("config.yml");
+        if (!configPath.toFile().exists()) return false;
+
+        try {
+            java.util.List<String> lines = Files.readAllLines(configPath, StandardCharsets.UTF_8);
+
+            // Find the "messages:" line at the root level (no indentation)
+            int messagesStart = -1;
+            for (int i = 0; i < lines.size(); i++) {
+                String line = lines.get(i);
+                if (line.equals("messages:") || line.startsWith("messages: ")) {
+                    messagesStart = i;
+                    break;
+                }
+            }
+
+            if (messagesStart < 0) return false;
+
+            // Include preceding comment/blank lines that belong to the messages section
+            int sectionStart = messagesStart;
+            for (int i = messagesStart - 1; i >= 0; i--) {
+                String line = lines.get(i);
+                if (line.isBlank() || line.stripLeading().startsWith("#")) {
+                    sectionStart = i;
+                } else {
+                    break;
+                }
+            }
+
+            // Find where the messages section ends (next root-level key or EOF)
+            int sectionEnd = lines.size();
+            for (int i = messagesStart + 1; i < lines.size(); i++) {
+                String line = lines.get(i);
+                if (line.isBlank() || line.stripLeading().startsWith("#")) continue;
+                // Non-blank, non-comment line at root level = section ended
+                if (!line.startsWith(" ") && !line.startsWith("\t")) {
+                    sectionEnd = i;
+                    break;
+                }
+            }
+
+            // Extract messages content (lines after "messages:"), reducing indent by 2
+            java.util.List<String> messageLines = new ArrayList<>();
+
+            // Add any header comments that were above "messages:" in config.yml
+            for (int i = sectionStart; i < messagesStart; i++) {
+                messageLines.add(lines.get(i));
+            }
+
+            // Add the content under "messages:" with indent reduced by 2
+            for (int i = messagesStart + 1; i < sectionEnd; i++) {
+                String line = lines.get(i);
+                if (line.isBlank()) {
+                    messageLines.add(line);
+                } else {
+                    // Reduce indentation by 2 spaces
+                    if (line.startsWith("  ")) {
+                        messageLines.add(line.substring(2));
+                    } else {
+                        messageLines.add(line);
+                    }
+                }
+            }
+
+            // Remove trailing blank lines
+            while (!messageLines.isEmpty() && messageLines.getLast().isBlank()) {
+                messageLines.removeLast();
+            }
+
+            if (messageLines.isEmpty()) return false;
+
+            // Write messages.yml
+            Files.writeString(messagesFile, String.join("\n", messageLines) + "\n", StandardCharsets.UTF_8);
+
+            // Remove the messages section from config.yml
+            java.util.List<String> remainingLines = new ArrayList<>();
+            for (int i = 0; i < sectionStart; i++) {
+                remainingLines.add(lines.get(i));
+            }
+            // Remove trailing blank lines from remaining config
+            while (!remainingLines.isEmpty() && remainingLines.getLast().isBlank()) {
+                remainingLines.removeLast();
+            }
+            for (int i = sectionEnd; i < lines.size(); i++) {
+                remainingLines.add(lines.get(i));
+            }
+            Files.writeString(configPath, String.join("\n", remainingLines) + "\n", StandardCharsets.UTF_8);
+
+            logger.info("Migrated messages from config.yml to messages.yml");
+            return true;
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Failed to migrate messages from config.yml", e);
+            return false;
+        }
     }
 
     private void mergeDefaults() {
