@@ -1,115 +1,83 @@
 # OakheartLib
 
-A shared library for [Oakheart SMP](https://github.com/LoralonMC) Paper plugins. Zero external dependencies, Java 21.
+A shared library for [Oakheart SMP](https://github.com/LoralonMC) Paper plugins. Java 21, Paper 1.21.10.
 
-## Modules
+## Structure
+
+| Module | Artifact | Description |
+|--------|----------|-------------|
+| **oakheart-core** | `dev.oakheart:oakheart-core` | Config engine, message helpers, command registration, debug logging |
+| **oakheart-models** | `dev.oakheart:oakheart-models` | Model provider system (Nexo, ItemsAdder, vanilla) — coming soon |
+
+## oakheart-core
 
 ### Config (`dev.oakheart.config`)
 
-A preservation-first YAML configuration engine for Minecraft plugin configs. Replaces Bukkit's `YamlConfiguration` / SnakeYAML with a custom parser that treats comments and formatting as first-class citizens.
-
-**The problem:** SnakeYAML destroys comments, blank lines, quoting style, and key ordering every time you call `save()`.
-
-**The solution:** A dual representation — a raw line list for byte-perfect file output and a structured tree for programmatic access. Both stay in sync at all times.
+A preservation-first YAML configuration engine. Replaces Bukkit's `YamlConfiguration` / SnakeYAML with a custom parser that treats comments and formatting as first-class citizens.
 
 - `save()` preserves everything — comments, blank lines, quoting, indentation
 - `set()` rewrites just the targeted line, nothing else
-- `mergeDefaults()` inserts missing keys at the correct position with their comments, without touching existing content
-
-#### Supported YAML Subset
-
-Purpose-built for Minecraft plugin configs, not general YAML:
-
-- Block-style maps and sequences (2-space indent)
-- Scalars: strings (quoted and unquoted), integers, longs, doubles, booleans, null
-- Full-line comments, inline comments, blank lines
-- Single-quoted and double-quoted strings with proper escaping
-
-**Not supported (by design):** flow-style collections (`[...]`, `{...}`), anchors/aliases, block scalars (`|`, `>`), merge keys (`<<`), tags, tabs for indentation. Unsupported constructs fail loudly at parse time — never silently corrupted.
-
-#### Usage
+- `mergeDefaults()` inserts missing keys at the correct position with their comments
 
 ```java
-// Load from file
 ConfigManager config = ConfigManager.load(configFile.toPath());
 
-// Read values (Bukkit-familiar API)
 String name = config.getString("display.name", "Default");
 int cooldown = config.getInt("settings.cooldown", 60);
-boolean debug = config.getBoolean("settings.debug");
 List<String> worlds = config.getStringList("disabled-worlds");
 
-// Sections and keys
-ConfigManager settings = config.getSection("settings");
-Set<String> keys = config.getKeys("settings", false);
-
-// Set values (updates just that line, preserves everything else)
 config.set("settings.debug", true);
-config.set("api-key", generatedKey);
-config.set("tags", List.of("survival", "adventure"));
-
-// Save (byte-perfect, atomic write)
 config.save();
 
-// Merge defaults from JAR resource (adds missing keys with comments)
 ConfigManager defaults = ConfigManager.fromStream(plugin.getResource("config.yml"));
 if (config.mergeDefaults(defaults)) {
     config.save();
 }
-
-// Reload from disk
-config.reload();
 ```
 
-#### API
+Supported YAML: block-style maps/sequences, scalars (strings, numbers, booleans, null), comments, blank lines, quoted strings. Not supported (by design): flow-style, anchors, block scalars, merge keys, tags, tabs.
 
-**Factory Methods**
+### Message Helper (`dev.oakheart.message`)
 
-| Method | Description |
-|--------|-------------|
-| `ConfigManager.load(Path)` | Load from file |
-| `ConfigManager.fromString(String)` | Parse from string |
-| `ConfigManager.fromStream(InputStream)` | Parse from stream (e.g. JAR resource) |
+Stateless MiniMessage parsing and delivery utilities. Plugins compose this into their own MessageManager.
 
-**Getters**
+```java
+// Parse a MiniMessage template (empty/null = disabled, returns Optional.empty())
+Optional<Component> component = MessageHelper.parse(template,
+    Placeholder.unparsed("player", playerName));
 
-| Method | Description |
-|--------|-------------|
-| `getString(path, default)` | String value |
-| `getInt(path, default)` | Integer value |
-| `getLong(path, default)` | Long value |
-| `getDouble(path, default)` | Double value |
-| `getBoolean(path, default)` | Boolean value |
-| `getStringList(path)` | List of strings |
-| `getIntList(path)` | List of integers |
-| `getSection(path)` | Sub-section as ConfigManager view |
-| `getKeys(path, deep)` | Child keys (shallow or deep) |
-| `contains(path)` | Check if path exists |
-| `isSection(path)` | Check if path is a map section |
+// Send with display mode routing (chat, action_bar, title)
+MessageHelper.send(sender, component.get(), "action_bar");
 
-**Mutation**
+// Parse + send in one call
+MessageHelper.send(sender, template, "chat",
+    Placeholder.unparsed("count", String.valueOf(count)));
+```
 
-| Method | Description |
-|--------|-------------|
-| `set(path, value)` | Set a scalar, list, or null — updates tree and line list |
-| `remove(path)` | Remove a key and its descendants |
+### Command Registrar (`dev.oakheart.command`)
 
-**Persistence**
+One-liner Brigadier command registration via Paper's LifecycleEventManager.
 
-| Method | Description |
-|--------|-------------|
-| `save()` | Save to original file (atomic write) |
-| `save(Path)` | Save to arbitrary path |
-| `reload()` | Re-read from disk |
-| `mergeDefaults(ConfigManager)` | Add missing keys from defaults |
-| `hasNewKeys(ConfigManager)` | Check if defaults have new keys |
+```java
+// Before (6 lines of boilerplate)
+LifecycleEventManager<Plugin> manager = plugin.getLifecycleManager();
+manager.registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+    Commands commands = event.registrar();
+    commands.register(buildCommand(), "Manage raids", List.of("rc"));
+});
 
-#### Write Invariants
+// After (1 line)
+CommandRegistrar.register(plugin, buildCommand(), "Manage raids", List.of("rc"));
+```
 
-- **Unmodified lines are preserved exactly** — byte-for-byte identical
-- **Modified scalar lines** preserve indent, inline comments, and quote style
-- **Inserted keys** follow formatting rules (2-space indent, comments from defaults)
-- **`save()` never reparses or rewrites** the entire file — it writes the line list verbatim
+### Debug Logger (`dev.oakheart.util`)
+
+Conditional debug logging gated behind a config boolean.
+
+```java
+DebugLogger debug = new DebugLogger(logger, configManager::isDebugMode);
+debug.log("Processing %d items for %s", items.size(), playerName);
+```
 
 ## Gradle Setup
 
@@ -127,15 +95,20 @@ repositories {
 }
 
 dependencies {
-    implementation 'dev.oakheart:oakheart-lib:1.0.0'
+    implementation 'dev.oakheart:oakheart-core:1.1.0'
+    // Only if the plugin uses custom item models:
+    // implementation 'dev.oakheart:oakheart-models:1.1.0'
 }
 
 shadowJar {
     relocate 'dev.oakheart.config', 'dev.oakheart.yourplugin.libs.config'
+    relocate 'dev.oakheart.message', 'dev.oakheart.yourplugin.libs.message'
+    relocate 'dev.oakheart.command', 'dev.oakheart.yourplugin.libs.command'
+    relocate 'dev.oakheart.util', 'dev.oakheart.yourplugin.libs.util'
 }
 ```
 
 ## Requirements
 
 - Java 21
-- No external dependencies
+- Paper 1.21.10
