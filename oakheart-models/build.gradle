@@ -1,4 +1,6 @@
-archivesBaseName = 'oakheart-models'
+base {
+    archivesName = 'oakheart-models'
+}
 
 repositories {
     maven {

@@ -491,6 +491,11 @@ public final class YamlParser {
 
     /**
      * Find an inline comment (space + #) in a value string, not inside quotes.
+     *
+     * <p>Limitation: this heuristic can false-positive on values containing " #"
+     * (e.g. "Check issue #42"). For Minecraft configs this is extremely rare.
+     * Values that need literal " #" should use quoted strings, which bypass
+     * this method entirely.</p>
      */
     private static int findInlineCommentIndex(String value) {
         for (int i = 0; i < value.length() - 1; i++) {

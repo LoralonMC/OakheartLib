@@ -22,9 +22,15 @@ import java.util.logging.Logger;
 public class ModelProviderManager {
 
     private final Logger logger;
+    private final ItemModelProvider itemModelProvider;
+    private final NexoProvider nexoProvider;
+    private final ItemsAdderProvider itemsAdderProvider;
 
     public ModelProviderManager(Logger logger) {
         this.logger = logger;
+        this.itemModelProvider = new ItemModelProvider();
+        this.nexoProvider = new NexoProvider(logger);
+        this.itemsAdderProvider = new ItemsAdderProvider(logger);
     }
 
     /**
@@ -48,7 +54,7 @@ public class ModelProviderManager {
         String actualModelId = modelId;
 
         if (modelId.toLowerCase().startsWith("model:")) {
-            provider = new ItemModelProvider();
+            provider = itemModelProvider;
             actualModelId = modelId.substring(6);
 
             if (!provider.isAvailable()) {
@@ -58,7 +64,7 @@ public class ModelProviderManager {
             }
         } else if (modelId.toLowerCase().startsWith("nexo:")) {
             actualModelId = modelId.substring(5);
-            provider = new NexoProvider(logger);
+            provider = nexoProvider;
 
             if (!provider.isAvailable()) {
                 logger.warning("Nexo provider requested but Nexo plugin is not available");
@@ -66,7 +72,7 @@ public class ModelProviderManager {
             }
         } else if (modelId.toLowerCase().startsWith("itemsadder:")) {
             actualModelId = modelId.substring(11);
-            provider = new ItemsAdderProvider(logger);
+            provider = itemsAdderProvider;
 
             if (!provider.isAvailable()) {
                 logger.warning("ItemsAdder provider requested but ItemsAdder plugin is not available");

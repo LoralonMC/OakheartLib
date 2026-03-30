@@ -226,15 +226,55 @@ public class MessageManager {
             }
         }
 
-        // Find where the section ends
+        // Find where the section ends (first non-indented content line after messages:)
+        // Be careful not to consume comment headers that belong to the next section
         int sectionEnd = lines.size();
         for (int i = messagesStart + 1; i < lines.size(); i++) {
             String line = lines.get(i);
-            if (line.isBlank() || line.stripLeading().startsWith("#")) continue;
-            if (!line.startsWith(" ") && !line.startsWith("\t")) {
-                sectionEnd = i;
-                break;
+            // Indented lines are part of the messages section
+            if (line.startsWith(" ") || line.startsWith("\t")) continue;
+            // Blank lines could be separators — check what follows
+            if (line.isBlank()) {
+                // Look ahead: if a non-indented content line follows (possibly after
+                // more blanks/comments), this blank is a section boundary
+                boolean nextSectionFollows = false;
+                for (int j = i + 1; j < lines.size(); j++) {
+                    String ahead = lines.get(j);
+                    if (ahead.isBlank()) continue;
+                    if (!ahead.startsWith(" ") && !ahead.startsWith("\t")
+                            && !ahead.stripLeading().startsWith("#")) {
+                        nextSectionFollows = true;
+                    }
+                    break;
+                }
+                if (nextSectionFollows) {
+                    sectionEnd = i;
+                    break;
+                }
+                continue;
             }
+            // Non-indented comment — check if it belongs to the next section
+            if (line.stripLeading().startsWith("#")) {
+                // Look ahead: if a non-indented content line follows, this comment
+                // is a header for the next section — stop here
+                boolean nextSectionFollows = false;
+                for (int j = i + 1; j < lines.size(); j++) {
+                    String ahead = lines.get(j);
+                    if (ahead.isBlank() || ahead.stripLeading().startsWith("#")) continue;
+                    if (!ahead.startsWith(" ") && !ahead.startsWith("\t")) {
+                        nextSectionFollows = true;
+                    }
+                    break;
+                }
+                if (nextSectionFollows) {
+                    sectionEnd = i;
+                    break;
+                }
+                continue;
+            }
+            // Non-indented, non-blank, non-comment — next section's key
+            sectionEnd = i;
+            break;
         }
 
         // Rebuild config.yml without the messages section

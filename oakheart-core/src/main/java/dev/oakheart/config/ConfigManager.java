@@ -89,9 +89,11 @@ public final class ConfigManager {
     // ========================================
 
     public String getString(String path, String def) {
-        YamlNode node = resolve(path);
-        if (node == null) return def;
-        return node.asString(def);
+        synchronized (getLock()) {
+            YamlNode node = resolve(path);
+            if (node == null) return def;
+            return node.asString(def);
+        }
     }
 
     public String getString(String path) {
@@ -99,9 +101,11 @@ public final class ConfigManager {
     }
 
     public int getInt(String path, int def) {
-        YamlNode node = resolve(path);
-        if (node == null) return def;
-        return node.asInt(def);
+        synchronized (getLock()) {
+            YamlNode node = resolve(path);
+            if (node == null) return def;
+            return node.asInt(def);
+        }
     }
 
     public int getInt(String path) {
@@ -109,9 +113,11 @@ public final class ConfigManager {
     }
 
     public double getDouble(String path, double def) {
-        YamlNode node = resolve(path);
-        if (node == null) return def;
-        return node.asDouble(def);
+        synchronized (getLock()) {
+            YamlNode node = resolve(path);
+            if (node == null) return def;
+            return node.asDouble(def);
+        }
     }
 
     public double getDouble(String path) {
@@ -119,9 +125,11 @@ public final class ConfigManager {
     }
 
     public long getLong(String path, long def) {
-        YamlNode node = resolve(path);
-        if (node == null) return def;
-        return node.asLong(def);
+        synchronized (getLock()) {
+            YamlNode node = resolve(path);
+            if (node == null) return def;
+            return node.asLong(def);
+        }
     }
 
     public long getLong(String path) {
@@ -129,9 +137,11 @@ public final class ConfigManager {
     }
 
     public boolean getBoolean(String path, boolean def) {
-        YamlNode node = resolve(path);
-        if (node == null) return def;
-        return node.asBoolean(def);
+        synchronized (getLock()) {
+            YamlNode node = resolve(path);
+            if (node == null) return def;
+            return node.asBoolean(def);
+        }
     }
 
     public boolean getBoolean(String path) {
@@ -139,19 +149,23 @@ public final class ConfigManager {
     }
 
     public List<String> getStringList(String path) {
-        YamlNode node = resolve(path);
-        if (node == null || node.getType() != NodeType.SEQUENCE) {
-            return Collections.emptyList();
+        synchronized (getLock()) {
+            YamlNode node = resolve(path);
+            if (node == null || node.getType() != NodeType.SEQUENCE) {
+                return Collections.emptyList();
+            }
+            return node.asStringList();
         }
-        return node.asStringList();
     }
 
     public List<Integer> getIntList(String path) {
-        YamlNode node = resolve(path);
-        if (node == null || node.getType() != NodeType.SEQUENCE) {
-            return Collections.emptyList();
+        synchronized (getLock()) {
+            YamlNode node = resolve(path);
+            if (node == null || node.getType() != NodeType.SEQUENCE) {
+                return Collections.emptyList();
+            }
+            return node.asIntList();
         }
-        return node.asIntList();
     }
 
     /**
@@ -169,27 +183,29 @@ public final class ConfigManager {
      * </pre>
      */
     public List<Map<String, Object>> getMapList(String path) {
-        YamlNode node = resolve(path);
-        if (node == null || node.getType() != NodeType.SEQUENCE) {
-            return Collections.emptyList();
-        }
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (YamlNode item : node.getItems()) {
-            if (item.getType() == NodeType.MAP) {
-                Map<String, Object> map = new LinkedHashMap<>();
-                for (var entry : item.getChildren().entrySet()) {
-                    YamlNode child = entry.getValue();
-                    if (child.getType() == NodeType.SCALAR) {
-                        map.put(entry.getKey(), child.getRawValue());
-                    } else if (child.getType() == NodeType.SEQUENCE) {
-                        map.put(entry.getKey(), child.asStringList());
-                    }
-                    // Nested maps are not flattened — access via getMapList for deeper structures
-                }
-                result.add(map);
+        synchronized (getLock()) {
+            YamlNode node = resolve(path);
+            if (node == null || node.getType() != NodeType.SEQUENCE) {
+                return Collections.emptyList();
             }
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (YamlNode item : node.getItems()) {
+                if (item.getType() == NodeType.MAP) {
+                    Map<String, Object> map = new LinkedHashMap<>();
+                    for (var entry : item.getChildren().entrySet()) {
+                        YamlNode child = entry.getValue();
+                        if (child.getType() == NodeType.SCALAR) {
+                            map.put(entry.getKey(), child.getRawValue());
+                        } else if (child.getType() == NodeType.SEQUENCE) {
+                            map.put(entry.getKey(), child.asStringList());
+                        }
+                        // Nested maps are not flattened — access via getMapList for deeper structures
+                    }
+                    result.add(map);
+                }
+            }
+            return result;
         }
-        return result;
     }
 
     // ========================================
@@ -202,13 +218,15 @@ public final class ConfigManager {
      * Returns null if the path does not exist or is not a map.
      */
     public ConfigManager getSection(String path) {
-        YamlNode node = resolve(path);
-        if (node == null || node.getType() != NodeType.MAP) return null;
-        ConfigManager root = owner != null ? owner : this;
-        // Build full path for the section view
-        String fullPath = (basePath != null && !basePath.isEmpty())
-                ? basePath + "." + path : path;
-        return new ConfigManager(filePath, fullPath, root);
+        synchronized (getLock()) {
+            YamlNode node = resolve(path);
+            if (node == null || node.getType() != NodeType.MAP) return null;
+            ConfigManager root = owner != null ? owner : this;
+            // Build full path for the section view
+            String fullPath = (basePath != null && !basePath.isEmpty())
+                    ? basePath + "." + path : path;
+            return new ConfigManager(filePath, fullPath, root);
+        }
     }
 
     /**
@@ -219,17 +237,19 @@ public final class ConfigManager {
      * @return set of key names in insertion order
      */
     public Set<String> getKeys(String path, boolean deep) {
-        YamlNode node = (path == null || path.isEmpty()) ? getBaseNode() : resolve(path);
-        if (node == null || node.getType() != NodeType.MAP) {
-            return Collections.emptySet();
+        synchronized (getLock()) {
+            YamlNode node = (path == null || path.isEmpty()) ? getBaseNode() : resolve(path);
+            if (node == null || node.getType() != NodeType.MAP) {
+                return Collections.emptySet();
+            }
+            Set<String> keys = new LinkedHashSet<>();
+            if (deep) {
+                collectDeepKeys(node, "", keys);
+            } else {
+                keys.addAll(node.getChildKeys());
+            }
+            return keys;
         }
-        Set<String> keys = new LinkedHashSet<>();
-        if (deep) {
-            collectDeepKeys(node, "", keys);
-        } else {
-            keys.addAll(node.getChildKeys());
-        }
-        return keys;
     }
 
     public Set<String> getKeys(boolean deep) {
@@ -252,15 +272,19 @@ public final class ConfigManager {
      * Check if a path exists (as either a value or a section).
      */
     public boolean contains(String path) {
-        return resolve(path) != null;
+        synchronized (getLock()) {
+            return resolve(path) != null;
+        }
     }
 
     /**
      * Check if a path is a configuration section (map node).
      */
     public boolean isSection(String path) {
-        YamlNode node = resolve(path);
-        return node != null && node.getType() == NodeType.MAP;
+        synchronized (getLock()) {
+            YamlNode node = resolve(path);
+            return node != null && node.getType() == NodeType.MAP;
+        }
     }
 
     // ========================================
@@ -281,6 +305,10 @@ public final class ConfigManager {
     public void set(String path, Object value) {
         synchronized (getLock()) {
             YamlDocument doc = getDocument();
+            if (getBaseNode() == null) {
+                throw new IllegalStateException(
+                        "Cannot set value — backing section no longer exists");
+            }
 
             if (value instanceof List<?> list) {
                 setList(path, (List<Object>) list, doc);
@@ -317,6 +345,7 @@ public final class ConfigManager {
 
             // Find the parent and the target node
             YamlNode parent = getBaseNode();
+            if (parent == null) return;
             for (int i = 0; i < segments.length - 1; i++) {
                 if (parent.getType() != NodeType.MAP) return;
                 parent = parent.getChild(segments[i]);
@@ -427,13 +456,11 @@ public final class ConfigManager {
 
         // Walk down, creating intermediate MAP sections as needed
         YamlNode current = getBaseNode();
-        int lastExistingDepth = -1;
 
         for (int i = 0; i < segments.length - 1; i++) {
             YamlNode child = current.getChild(segments[i]);
             if (child != null && child.getType() == NodeType.MAP) {
                 current = child;
-                lastExistingDepth = i;
             } else if (child == null) {
                 // Need to create intermediate section
                 int parentIndent = current == getBaseNode() ? -2 : current.getIndent();
@@ -447,7 +474,6 @@ public final class ConfigManager {
                 YamlNode section = new YamlNode(segments[i], NodeType.MAP, insertAt, Math.max(0, newIndent));
                 current.addChild(segments[i], section);
                 current = section;
-                lastExistingDepth = i;
             } else {
                 throw new IllegalArgumentException(
                         "Cannot create path '" + path + "': '" + segments[i] + "' exists but is not a section.");
@@ -616,8 +642,13 @@ public final class ConfigManager {
 
     /**
      * Re-read the file from disk, replacing the in-memory document.
+     * Section views delegate to their owning root config.
      */
     public void reload() throws IOException {
+        if (owner != null) {
+            owner.reload();
+            return;
+        }
         if (filePath == null) {
             throw new IOException("No file path set — cannot reload");
         }
