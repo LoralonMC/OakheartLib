@@ -15,7 +15,7 @@ A shared library for [Oakheart SMP](https://github.com/LoralonMC) Paper plugins.
 
 A preservation-first YAML configuration engine. Replaces Bukkit's `YamlConfiguration` / SnakeYAML with a custom parser that treats comments and formatting as first-class citizens.
 
-- `save()` preserves everything — comments, blank lines, quoting, indentation
+- `save()` preserves comments, blank lines, quoting style, and indentation for unmodified regions
 - `set()` rewrites just the targeted line, nothing else
 - `mergeDefaults()` inserts missing keys at the correct position with their comments
 
@@ -35,23 +35,27 @@ if (config.mergeDefaults(defaults)) {
 }
 ```
 
-Supported YAML: block-style maps/sequences, scalars (strings, numbers, booleans, null), comments, blank lines, quoted strings. Not supported (by design): flow-style, anchors, block scalars, merge keys, tags, tabs.
+Supported YAML: block-style maps/sequences (scalar items only — sequences of maps are not supported), scalars (strings, numbers, booleans, null), comments, blank lines, quoted strings. Not supported (by design): flow-style, anchors, block scalars, merge keys, tags, tabs, sequences of maps. Line endings are normalized to `\n` on load.
 
-### Message Helper (`dev.oakheart.message`)
+### Message Manager (`dev.oakheart.message`)
 
-Stateless MiniMessage parsing and delivery utilities. Plugins compose this into their own MessageManager.
+Shared message manager that owns a `messages.yml` file per plugin. Handles loading, merging defaults, caching, and delivery routing (chat / action_bar / title).
 
 ```java
-// Parse a MiniMessage template (empty/null = disabled, returns Optional.empty())
-Optional<Component> component = MessageHelper.parse(template,
-    Placeholder.unparsed("player", playerName));
+MessageManager messages = new MessageManager(plugin, logger);
+messages.load();
 
-// Send with display mode routing (chat, action_bar, title)
-MessageHelper.send(sender, component.get(), "action_bar");
+// Gameplay message with display mode from messages.yml
+messages.send(sender, "raid-blocked", Placeholder.unparsed("time", formatted));
 
-// Parse + send in one call
-MessageHelper.send(sender, template, "chat",
-    Placeholder.unparsed("count", String.valueOf(count)));
+// Command message (always chat)
+messages.sendCommand(sender, "reload-success");
+
+// Parse without sending (for GUI lore, hover text)
+Optional<Component> component = messages.parse("greeting", Placeholder.unparsed("player", name));
+
+// Raw MiniMessage (for config values, not messages.yml)
+Component title = messages.deserialize(configTitle);
 ```
 
 ### Command Registrar (`dev.oakheart.command`)

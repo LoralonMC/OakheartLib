@@ -255,11 +255,13 @@ public final class ConfigManager {
                 removeSequenceItems(existing, doc);
                 existing.setType(NodeType.SCALAR);
                 updateExistingScalar(existing, value, doc);
+            } else if (existing != null && existing.getType() == NodeType.MAP) {
+                throw new IllegalArgumentException(
+                        "Cannot overwrite section '" + path + "' with a scalar value. Use remove() first.");
             } else if (existing == null) {
                 // Insert new key
                 insertNewKey(path, value, doc);
             }
-            // If existing is a MAP and value isn't a list, ignore (can't overwrite a section with a scalar)
         }
     }
 
@@ -400,8 +402,8 @@ public final class ConfigManager {
                 current = section;
                 lastExistingDepth = i;
             } else {
-                // Existing node is not a map — can't create child under it
-                return;
+                throw new IllegalArgumentException(
+                        "Cannot create path '" + path + "': '" + segments[i] + "' exists but is not a section.");
             }
         }
 
@@ -444,7 +446,8 @@ public final class ConfigManager {
                 current.addChild(segments[i], section);
                 current = section;
             } else {
-                return;
+                throw new IllegalArgumentException(
+                        "Cannot create sequence: '" + segments[i] + "' exists but is not a section.");
             }
         }
 

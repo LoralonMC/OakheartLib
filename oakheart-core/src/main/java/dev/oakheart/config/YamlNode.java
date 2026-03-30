@@ -216,6 +216,59 @@ public final class YamlNode {
         children.put(key, child);
     }
 
+    /**
+     * Insert a child after a specific sibling key, preserving insertion order.
+     * If afterKey is null or not found, appends at the end.
+     */
+    void addChildAfter(String afterKey, String key, YamlNode child) {
+        if (children == null) {
+            children = new LinkedHashMap<>();
+            children.put(key, child);
+            return;
+        }
+
+        if (afterKey == null || !children.containsKey(afterKey)) {
+            children.put(key, child);
+            return;
+        }
+
+        // Rebuild the map with the new entry inserted after afterKey
+        LinkedHashMap<String, YamlNode> newChildren = new LinkedHashMap<>();
+        for (var entry : children.entrySet()) {
+            newChildren.put(entry.getKey(), entry.getValue());
+            if (entry.getKey().equals(afterKey)) {
+                newChildren.put(key, child);
+            }
+        }
+        children = newChildren;
+    }
+
+    /**
+     * Insert a child before a specific sibling key, preserving insertion order.
+     * If beforeKey is null or not found, appends at the end.
+     */
+    void addChildBefore(String beforeKey, String key, YamlNode child) {
+        if (children == null) {
+            children = new LinkedHashMap<>();
+            children.put(key, child);
+            return;
+        }
+
+        if (beforeKey == null || !children.containsKey(beforeKey)) {
+            children.put(key, child);
+            return;
+        }
+
+        LinkedHashMap<String, YamlNode> newChildren = new LinkedHashMap<>();
+        for (var entry : children.entrySet()) {
+            if (entry.getKey().equals(beforeKey)) {
+                newChildren.put(key, child);
+            }
+            newChildren.put(entry.getKey(), entry.getValue());
+        }
+        children = newChildren;
+    }
+
     void removeChild(String key) {
         if (children != null) {
             children.remove(key);

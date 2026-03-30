@@ -107,8 +107,8 @@ public final class YamlMerger {
                                           String missingKey, List<String> defaultKeyOrder) {
         YamlNode defaultChild = defaultParent.getChild(missingKey);
 
-        // Find insertion point: after the last sibling (in default order) that exists in user doc
-        int insertAt = findInsertionPoint(userDoc, userParent, defaultKeyOrder, missingKey);
+        // Find insertion point and the sibling to insert after/before in the tree
+        InsertionInfo insertion = findInsertionPoint(userDoc, userParent, defaultKeyOrder, missingKey);
 
         // Extract lines from defaults for this key (leading comments + key + descendants)
         List<String> extractedLines = extractNodeLines(defaultDoc, defaultChild);
@@ -128,7 +128,7 @@ public final class YamlMerger {
 
         // Insert lines into user document
         if (!newLines.isEmpty()) {
-            userDoc.insertLines(insertAt, newLines);
+            userDoc.insertLines(insertion.lineIndex, newLines);
         }
 
         // Re-parse the inserted section to create proper tree nodes
@@ -149,21 +149,29 @@ public final class YamlMerger {
             YamlNode insertedNode = tempRoot.getChild(insertedKey);
 
             // Shift the temp node's line indices to match actual positions in user doc
-            shiftNodeIndices(insertedNode, insertAt);
+            shiftNodeIndices(insertedNode, insertion.lineIndex);
             insertedNode.setLeadingCommentLines(
-                    shiftIndices(insertedNode.getLeadingCommentLines(), insertAt));
+                    shiftIndices(insertedNode.getLeadingCommentLines(), insertion.lineIndex));
 
-            userParent.addChild(missingKey, insertedNode);
+            // Insert into tree at the correct position (matching line order)
+            if (insertion.afterKey != null) {
+                userParent.addChildAfter(insertion.afterKey, missingKey, insertedNode);
+            } else if (insertion.beforeKey != null) {
+                userParent.addChildBefore(insertion.beforeKey, missingKey, insertedNode);
+            } else {
+                userParent.addChild(missingKey, insertedNode);
+            }
         }
     }
 
+    private record InsertionInfo(int lineIndex, String afterKey, String beforeKey) {}
+
     /**
      * Find where to insert a missing key in the user document.
-     * Strategy: find the last sibling (in default key order) that exists in the user doc,
-     * and insert after it.
+     * Returns the line index and which sibling key to insert after/before in the tree.
      */
-    private static int findInsertionPoint(YamlDocument userDoc, YamlNode userParent,
-                                           List<String> defaultKeyOrder, String missingKey) {
+    private static InsertionInfo findInsertionPoint(YamlDocument userDoc, YamlNode userParent,
+                                                     List<String> defaultKeyOrder, String missingKey) {
         int missingIndex = defaultKeyOrder.indexOf(missingKey);
 
         // Look backwards through default key order for a sibling that exists in user
@@ -171,7 +179,7 @@ public final class YamlMerger {
             String siblingKey = defaultKeyOrder.get(i);
             YamlNode sibling = userParent.getChild(siblingKey);
             if (sibling != null) {
-                return sibling.getLastLine() + 1;
+                return new InsertionInfo(sibling.getLastLine() + 1, siblingKey, null);
             }
         }
 
@@ -180,15 +188,15 @@ public final class YamlMerger {
             String siblingKey = defaultKeyOrder.get(i);
             YamlNode sibling = userParent.getChild(siblingKey);
             if (sibling != null) {
-                return sibling.getFirstLine();
+                return new InsertionInfo(sibling.getFirstLine(), null, siblingKey);
             }
         }
 
         // No siblings at all — insert after parent's key line or at end
         if (userParent.getKeyLineIndex() >= 0) {
-            return userParent.getKeyLineIndex() + 1;
+            return new InsertionInfo(userParent.getKeyLineIndex() + 1, null, null);
         }
-        return userDoc.lineCount();
+        return new InsertionInfo(userDoc.lineCount(), null, null);
     }
 
     /**

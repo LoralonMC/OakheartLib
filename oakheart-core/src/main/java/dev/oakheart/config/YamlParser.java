@@ -15,7 +15,8 @@ import java.util.Locale;
  * </ul>
  *
  * <p><strong>Not supported (by design):</strong> anchors, aliases, flow-style collections,
- * block scalars (| and >), merge keys, tags, complex keys, tabs for indentation.</p>
+ * block scalars (| and >), merge keys, tags, complex keys, tabs for indentation,
+ * sequences of maps (list items are always scalars).</p>
  */
 public final class YamlParser {
 
@@ -67,9 +68,13 @@ public final class YamlParser {
                 continue;
             }
 
-            // Check for tabs
-            if (text.length() > 0 && text.charAt(0) == '\t') {
-                throw new YamlParseException("Tabs are not supported for indentation", i + 1, text);
+            // Check for tabs in indentation
+            for (int c = 0; c < text.length(); c++) {
+                char ch = text.charAt(c);
+                if (ch == '\t') {
+                    throw new YamlParseException("Tabs are not supported for indentation", i + 1, text);
+                }
+                if (ch != ' ') break;
             }
 
             int indent = line.indent();
