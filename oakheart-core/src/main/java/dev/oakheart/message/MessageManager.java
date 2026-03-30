@@ -2,6 +2,7 @@ package dev.oakheart.message;
 
 import dev.oakheart.config.ConfigManager;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.title.Title;
@@ -178,7 +179,8 @@ public class MessageManager {
      * that contain MiniMessage formatting but aren't in messages.yml.
      */
     public Component deserialize(String text, TagResolver... resolvers) {
-        return MINI_MESSAGE.deserialize(text, resolvers);
+        return MINI_MESSAGE.deserialize(text, resolvers)
+                .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE);
     }
 
     // ========================================
