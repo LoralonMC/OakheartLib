@@ -445,27 +445,35 @@ public final class YamlParser {
             return;
         }
 
-        // Integer (including negative)
-        try {
-            long longVal = Long.parseLong(rawValue);
-            if (longVal >= Integer.MIN_VALUE && longVal <= Integer.MAX_VALUE) {
-                node.setScalarValue((int) longVal, YamlNode.QuoteStyle.UNQUOTED);
-            } else {
-                node.setScalarValue(longVal, YamlNode.QuoteStyle.UNQUOTED);
-            }
-            return;
-        } catch (NumberFormatException ignored) {}
+        // Only treat as numeric if it actually looks like a YAML number. Java's parseLong/parseDouble
+        // accept Java literal suffixes (d/D/f/F/l/L), so without this guard a value like "3d" would
+        // silently become the double 3.0 instead of the string "3d" — which matters for duration
+        // strings, color codes, and similar short letter-suffixed values.
+        if (NUMERIC_PATTERN.matcher(rawValue).matches()) {
+            try {
+                long longVal = Long.parseLong(rawValue);
+                if (longVal >= Integer.MIN_VALUE && longVal <= Integer.MAX_VALUE) {
+                    node.setScalarValue((int) longVal, YamlNode.QuoteStyle.UNQUOTED);
+                } else {
+                    node.setScalarValue(longVal, YamlNode.QuoteStyle.UNQUOTED);
+                }
+                return;
+            } catch (NumberFormatException ignored) {}
 
-        // Double/Float
-        try {
-            double doubleVal = Double.parseDouble(rawValue);
-            node.setScalarValue(doubleVal, YamlNode.QuoteStyle.UNQUOTED);
-            return;
-        } catch (NumberFormatException ignored) {}
+            try {
+                double doubleVal = Double.parseDouble(rawValue);
+                node.setScalarValue(doubleVal, YamlNode.QuoteStyle.UNQUOTED);
+                return;
+            } catch (NumberFormatException ignored) {}
+        }
 
         // Plain string
         node.setScalarValue(rawValue, YamlNode.QuoteStyle.UNQUOTED);
     }
+
+    private static final java.util.regex.Pattern NUMERIC_PATTERN = java.util.regex.Pattern.compile(
+            "^[-+]?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][-+]?\\d+)?$"
+    );
 
     /**
      * Find the colon that separates key from value in a YAML line.
