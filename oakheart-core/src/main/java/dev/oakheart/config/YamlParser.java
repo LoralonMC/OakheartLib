@@ -124,8 +124,12 @@ public final class YamlParser {
         String rawValue = valuePart;
 
         if (!valuePart.isEmpty()) {
-            // Extract inline comment (if value is not quoted)
-            if (valuePart.charAt(0) != '\'' && valuePart.charAt(0) != '"') {
+            if (valuePart.charAt(0) == '#') {
+                // "key:   # comment" — pure inline comment after the colon, no actual value.
+                // Treat as an empty-value key (look ahead for children) with a trailing comment.
+                inlineComment = valuePart;
+                rawValue = "";
+            } else if (valuePart.charAt(0) != '\'' && valuePart.charAt(0) != '"') {
                 int commentIdx = findInlineCommentIndex(valuePart);
                 if (commentIdx >= 0) {
                     rawValue = valuePart.substring(0, commentIdx).stripTrailing();
