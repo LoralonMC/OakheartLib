@@ -10,12 +10,15 @@ import java.util.Locale;
  * <p>This is a purpose-built parser for the subset of YAML used in Minecraft configs:</p>
  * <ul>
  *   <li>Block-style maps and sequences</li>
+ *   <li>Flow-style scalar sequences ({@code key: [a, b, c]}) — read-only; mutations
+ *       through {@code set()} convert the value to block-style on the next save</li>
  *   <li>Scalars: strings (quoted/unquoted), ints, longs, doubles, booleans, null</li>
  *   <li>Full-line comments, inline comments, blank lines</li>
  * </ul>
  *
- * <p><strong>Not supported (by design):</strong> anchors, aliases, flow-style collections,
- * block scalars (| and >), merge keys, tags, complex keys, tabs for indentation.</p>
+ * <p><strong>Not supported (by design):</strong> anchors, aliases, flow-style maps,
+ * nested flow sequences, block scalars (| and >), merge keys, tags, complex keys,
+ * tabs for indentation.</p>
  */
 public final class YamlParser {
 
@@ -179,6 +182,22 @@ public final class YamlParser {
                     parent.addChild(key, node);
                 }
             }
+        } else if (isFlowSequence(rawValue)) {
+            // Flow-style scalar sequence on the same line: `key: [a, b, c]`.
+            // We model this as a SEQUENCE node whose item children share the parent line —
+            // they have no line of their own. The serializer dumps the parent line verbatim
+            // (so the original "[a, b, c]" formatting round-trips), but any mutation through
+            // `set()` rebuilds the sequence as block-style children on subsequent lines.
+            YamlNode seq = new YamlNode(key, NodeType.SEQUENCE, lineIndex, indent);
+            seq.setInlineComment(inlineComment);
+            seq.setLeadingCommentLines(new ArrayList<>(pendingComments));
+            pendingComments.clear();
+            for (String element : parseFlowSequenceElements(rawValue, lineIndex + 1, lines.get(lineIndex).text())) {
+                YamlNode item = new YamlNode(null, NodeType.SCALAR, lineIndex, indent);
+                parseAndSetScalar(item, element);
+                seq.addItem(item);
+            }
+            parent.addChild(key, seq);
         } else {
             // Parse scalar value
             YamlNode node = new YamlNode(key, NodeType.SCALAR, lineIndex, indent);
@@ -188,6 +207,74 @@ public final class YamlParser {
             pendingComments.clear();
             parent.addChild(key, node);
         }
+    }
+
+    /**
+     * Returns true if the raw value is a flow-style sequence ({@code [...]}).
+     * Doesn't validate inner content — that's done during element parsing.
+     */
+    private static boolean isFlowSequence(String rawValue) {
+        return rawValue.length() >= 2
+                && rawValue.charAt(0) == '['
+                && rawValue.charAt(rawValue.length() - 1) == ']';
+    }
+
+    /**
+     * Splits a flow-style sequence body ({@code [a, "b, c", d]}) into its element strings,
+     * preserving quoting so the scalar parser can recognize types correctly.
+     * <p>
+     * Commas inside quoted strings don't split. Whitespace around elements is trimmed.
+     * Nested flow collections aren't supported and raise a parse error.
+     */
+    private static List<String> parseFlowSequenceElements(String rawValue, int lineNumber, String rawText) {
+        String inner = rawValue.substring(1, rawValue.length() - 1).strip();
+        if (inner.isEmpty()) return new ArrayList<>();
+
+        List<String> out = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inSingleQuote = false;
+        boolean inDoubleQuote = false;
+
+        for (int i = 0; i < inner.length(); i++) {
+            char c = inner.charAt(i);
+
+            if (c == '\'' && !inDoubleQuote) {
+                // YAML-escaped single quote ('' inside a single-quoted string) — keep both chars.
+                if (inSingleQuote && i + 1 < inner.length() && inner.charAt(i + 1) == '\'') {
+                    current.append("''");
+                    i++;
+                    continue;
+                }
+                inSingleQuote = !inSingleQuote;
+                current.append(c);
+            } else if (c == '"' && !inSingleQuote) {
+                // Backslash-escaped double quote inside a double-quoted string.
+                if (inDoubleQuote && i > 0 && inner.charAt(i - 1) == '\\') {
+                    current.append(c);
+                    continue;
+                }
+                inDoubleQuote = !inDoubleQuote;
+                current.append(c);
+            } else if (!inSingleQuote && !inDoubleQuote && (c == '[' || c == '{')) {
+                throw new YamlParseException("Nested flow collections are not supported", lineNumber, rawText);
+            } else if (!inSingleQuote && !inDoubleQuote && c == ']') {
+                throw new YamlParseException("Unbalanced flow sequence", lineNumber, rawText);
+            } else if (c == ',' && !inSingleQuote && !inDoubleQuote) {
+                String element = current.toString().strip();
+                if (!element.isEmpty()) out.add(element);
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+
+        if (inSingleQuote || inDoubleQuote) {
+            throw new YamlParseException("Unterminated quoted string in flow sequence", lineNumber, rawText);
+        }
+
+        String last = current.toString().strip();
+        if (!last.isEmpty()) out.add(last);
+        return out;
     }
 
     private static void parseSequenceItem(List<DocumentLine> lines, int lineIndex,
@@ -575,7 +662,10 @@ public final class YamlParser {
      * Reject unsupported YAML constructs at parse time.
      */
     private static void rejectUnsupported(String trimmed, int lineNumber, String rawText) {
-        // Flow-style collections
+        // Flow-style collections at line start (no key) — still unsupported. Flow-style
+        // sequences as map values (`key: [a, b]`) are handled by parseMapEntry; flow-style
+        // maps as values (`key: {...}`) parse as string scalars (callers handle the {} empty
+        // placeholder convention via section-extension helpers).
         if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
             throw new YamlParseException("Flow-style collections are not supported", lineNumber, rawText);
         }
