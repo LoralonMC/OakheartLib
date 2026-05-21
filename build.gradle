@@ -3,21 +3,21 @@ subprojects {
     apply plugin: 'maven-publish'
 
     group = 'dev.oakheart'
-    version = '1.1.1'
+    version = '1.2.0'
 
     java {
-        toolchain.languageVersion = JavaLanguageVersion.of(21)
+        toolchain.languageVersion = JavaLanguageVersion.of(25)
     }
 
     compileJava {
         options.encoding = 'UTF-8'
-        options.release = 21
+        options.release = 25
         options.compilerArgs += ['-Xlint:deprecation', '-Xlint:unchecked']
     }
 
     compileTestJava {
         options.encoding = 'UTF-8'
-        options.release = 21
+        options.release = 25
     }
 
     repositories {
