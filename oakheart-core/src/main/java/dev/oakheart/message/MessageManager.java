@@ -202,11 +202,20 @@ public class MessageManager {
      */
     public List<Component> parseLines(String key, TagResolver... resolvers) {
         List<String> lines = config.getStringList(key);
+        String scalarFallback = (lines == null || lines.isEmpty()) ? getMessageText(key) : null;
+        return renderLines(lines, scalarFallback, resolvers);
+    }
+
+    /**
+     * Render a list of MiniMessage lines (or a single scalar fallback) into lore
+     * components, suppressing inherited italic per line. Extracted from
+     * {@link #parseLines} so the line-rendering rules can be unit-tested without a
+     * live server. Returns an empty list when both inputs are empty (disabled).
+     */
+    static List<Component> renderLines(List<String> lines, String scalarFallback, TagResolver... resolvers) {
         if (lines == null || lines.isEmpty()) {
-            // Fall back to a scalar string (legacy single-line lore keys).
-            String single = getMessageText(key);
-            if (single == null || single.isEmpty()) return List.of();
-            lines = List.of(single);
+            if (scalarFallback == null || scalarFallback.isEmpty()) return List.of();
+            lines = List.of(scalarFallback);
         }
         List<Component> out = new ArrayList<>(lines.size());
         for (String line : lines) {

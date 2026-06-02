@@ -11,6 +11,8 @@ repositories {
 
 dependencies {
     compileOnly 'io.papermc.paper:paper-api:26.1.2.build.+'
+    // Adventure / MiniMessage (bundled with paper-api) for message-rendering tests.
+    testImplementation 'io.papermc.paper:paper-api:26.1.2.build.+'
 }
 
 publishing {
