@@ -1,6 +1,7 @@
 package dev.oakheart.util;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 /**
@@ -38,6 +39,22 @@ public final class DebugLogger {
     public void log(String format, Object... args) {
         if (enabled.getAsBoolean()) {
             logger.info("[DEBUG] " + String.format(format, args));
+        }
+    }
+
+    /**
+     * Log a lazily-built debug message at INFO level if debug mode is enabled.
+     *
+     * <p>The supplier is only invoked when debug mode is on, so expensive message
+     * construction (string concatenation, collection dumps, etc.) is skipped
+     * entirely when debugging is disabled:</p>
+     * <pre>{@code
+     * debug.log(() -> "state dump: " + buildExpensiveReport());
+     * }</pre>
+     */
+    public void log(Supplier<String> message) {
+        if (enabled.getAsBoolean()) {
+            logger.info("[DEBUG] " + message.get());
         }
     }
 }
