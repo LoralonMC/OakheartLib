@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -363,6 +364,43 @@ public class MessageManager {
         String text = getMessageText(key);
         if (text == null || text.isEmpty()) return Optional.empty();
         return Optional.of(MINI_MESSAGE.deserialize(text, resolvers));
+    }
+
+    /**
+     * Parse a message key into one or more lines, intended for item lore.
+     *
+     * <p>Reads the key as a YAML string list (one MiniMessage template per line) and
+     * parses each into its own {@link Component}, so a multi-line lore block can be
+     * expressed naturally:</p>
+     * <pre>
+     * lore-collected:
+     *   - "&lt;#f2ebd7&gt;Status: &lt;#8FAA87&gt;Collected"
+     *   - "&lt;#f2ebd7&gt;Obtained: &lt;#FCD472&gt;&lt;date&gt;"
+     * </pre>
+     *
+     * <p>Backward compatible: if the key holds a single scalar string (the older
+     * single-line form) it is returned as a one-element list. A blank entry within
+     * the list becomes an empty line, which is the usual way to add spacing in lore.
+     * Returns an empty list if the key is missing or set to an empty value (disabled).</p>
+     *
+     * <p>Like {@link #deserialize(String, TagResolver...)}, each line has
+     * {@code decorationIfAbsent(ITALIC, FALSE)} applied so lore renders without
+     * Minecraft's inherited italic.</p>
+     */
+    public List<Component> parseLines(String key, TagResolver... resolvers) {
+        List<String> lines = config.getStringList(key);
+        if (lines == null || lines.isEmpty()) {
+            // Fall back to a scalar string (legacy single-line lore keys).
+            String single = getMessageText(key);
+            if (single == null || single.isEmpty()) return List.of();
+            lines = List.of(single);
+        }
+        List<Component> out = new ArrayList<>(lines.size());
+        for (String line : lines) {
+            out.add(MINI_MESSAGE.deserialize(line, resolvers)
+                    .decorationIfAbsent(TextDecoration.ITALIC, TextDecoration.State.FALSE));
+        }
+        return out;
     }
 
     /**
