@@ -779,6 +779,68 @@ public final class ConfigManager {
     }
 
     /**
+     * Three-way sync of leading comment blocks from new defaults into this config,
+     * preserving any comment the admin has customised.
+     *
+     * <p>Where {@link #mergeDefaults} adds new keys, this updates the <em>comments</em>
+     * on keys that already exist — the case {@code mergeDefaults} deliberately won't
+     * touch. The {@code baseline} (the previously-shipped default) is the merge base:
+     * a key's comment is updated to match {@code newDefaults} only when the user's
+     * current comment still equals the baseline's (i.e. the admin never edited it).
+     * Admin-written comments are always preserved. Comparison ignores indentation and
+     * blank lines; only leading comment blocks are synced (not inline comments).</p>
+     *
+     * @return true if any comment was changed (caller should {@code save()})
+     */
+    public boolean syncComments(ConfigManager newDefaults, ConfigManager baseline) {
+        if (owner != null) {
+            throw new IllegalStateException("syncComments must be called on a root config, not a section view");
+        }
+        synchronized (getLock()) {
+            boolean changed = CommentSync.sync(getDocument(), newDefaults.getDocument(), baseline.getDocument());
+            if (changed) {
+                // Re-parse so the tree matches the edited line list (round-trip is byte-identical).
+                this.document = YamlParser.parse(getDocument().serialize());
+            }
+            return changed;
+        }
+    }
+
+    /**
+     * Convenience wrapper that manages the baseline file itself. Loads the baseline
+     * from {@code baselineFile} (if present) and runs {@link #syncComments(ConfigManager, ConfigManager)},
+     * then writes {@code newDefaults} to {@code baselineFile} as the baseline for next
+     * run. On the very first run no baseline exists yet, so nothing is synced (comments
+     * are already current on a fresh install) and the baseline is simply seeded.
+     *
+     * <p>Typical use in {@code onEnable}, after {@code mergeDefaults}:</p>
+     * <pre>{@code
+     * ConfigManager defaults = ConfigManager.fromStream(getResource("config.yml"));
+     * boolean a = config.mergeDefaults(defaults);
+     * boolean b = config.syncComments(defaults,
+     *         getDataFolder().toPath().resolve(".oakheart/config-baseline.yml"));
+     * if (a || b) config.save();
+     * }</pre>
+     *
+     * @return true if any comment was changed (caller should {@code save()})
+     */
+    public boolean syncComments(ConfigManager newDefaults, Path baselineFile) throws IOException {
+        if (owner != null) {
+            throw new IllegalStateException("syncComments must be called on a root config, not a section view");
+        }
+        boolean changed = false;
+        if (Files.exists(baselineFile)) {
+            changed = syncComments(newDefaults, ConfigManager.load(baselineFile));
+        }
+        Path parent = baselineFile.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
+        newDefaults.save(baselineFile);
+        return changed;
+    }
+
+    /**
      * Check if this config is missing any keys from the defaults.
      */
     public boolean hasNewKeys(ConfigManager defaults) {
