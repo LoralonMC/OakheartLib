@@ -11,8 +11,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -75,15 +73,12 @@ public class MessageManager {
     }
 
     /**
-     * Load messages.yml from disk. If messages.yml doesn't exist, checks for a legacy
-     * {@code messages:} section in config.yml and migrates it automatically. Otherwise,
-     * extracts the default from the JAR. Then merges any new keys from the JAR defaults.
+     * Load messages.yml from disk. If messages.yml doesn't exist, extracts the
+     * default from the JAR. Then merges any new keys from the JAR defaults.
      */
     public void load() {
         if (!messagesFile.toFile().exists()) {
-            if (!migrateFromConfig()) {
-                plugin.saveResource("messages.yml", false);
-            }
+            plugin.saveResource("messages.yml", false);
         }
 
         try {
@@ -108,188 +103,6 @@ public class MessageManager {
         }
         mergeDefaults();
         cache.clear();
-    }
-
-    /**
-     * Migrate messages from a legacy config.yml {@code messages:} section to messages.yml.
-     * Reads config.yml as raw lines, extracts the messages section (reducing indent by 2),
-     * writes to messages.yml, and removes the section from config.yml.
-     *
-     * @return true if migration was performed
-     */
-    private boolean migrateFromConfig() {
-        Path configPath = plugin.getDataFolder().toPath().resolve("config.yml");
-        if (!configPath.toFile().exists()) return false;
-
-        try {
-            // Check if config.yml has a messages: section
-            ConfigManager oldConfig = ConfigManager.load(configPath);
-            ConfigManager oldMessages = oldConfig.getSection("messages");
-            if (oldMessages == null) return false;
-
-            // Extract the JAR's messages.yml as the template (perfect structure)
-            try (var stream = plugin.getResource("messages.yml")) {
-                if (stream == null) return false;
-                // saveResource to create the file with perfect JAR formatting
-                plugin.saveResource("messages.yml", false);
-            }
-
-            // Load the new messages.yml template
-            ConfigManager newMessages = ConfigManager.load(messagesFile);
-
-            // Check if old messages used a <prefix> placeholder that needs resolving
-            String oldPrefix = oldMessages.getString("prefix");
-            String oldErrorPrefix = oldMessages.getString("error-prefix");
-
-            // Walk all leaf keys in the new file and overlay old values where they exist
-            boolean changed = false;
-            for (String key : newMessages.getKeys(true)) {
-                // Try to find the old value: the old config stored messages under "messages.<key>"
-                String oldValue = oldMessages.getString(key);
-                if (oldValue != null) {
-                    // Resolve <prefix> and <error-prefix> placeholders inline
-                    if (oldPrefix != null) {
-                        oldValue = oldValue.replace("<prefix>", oldPrefix);
-                    }
-                    if (oldErrorPrefix != null) {
-                        oldValue = oldValue.replace("<error-prefix>", oldErrorPrefix);
-                    }
-                    String newValue = newMessages.getString(key);
-                    if (!oldValue.equals(newValue)) {
-                        newMessages.set(key, oldValue);
-                        changed = true;
-                    }
-                }
-
-                // For command messages (commands.xyz), also check if the old config had
-                // a gameplay version (messages.xyz.text) that was moved to commands
-                if (key.startsWith("commands.")) {
-                    String commandKey = key.substring("commands.".length());
-                    String oldGameplayText = oldMessages.getString(commandKey + ".text");
-                    if (oldGameplayText != null) {
-                        // Resolve prefix placeholders
-                        if (oldPrefix != null) {
-                            oldGameplayText = oldGameplayText.replace("<prefix>", oldPrefix);
-                        }
-                        if (oldErrorPrefix != null) {
-                            oldGameplayText = oldGameplayText.replace("<error-prefix>", oldErrorPrefix);
-                        }
-                        String newValue = newMessages.getString(key);
-                        if (!oldGameplayText.equals(newValue)) {
-                            newMessages.set(key, oldGameplayText);
-                            changed = true;
-                        }
-                    }
-                }
-            }
-
-            if (changed) {
-                newMessages.save();
-            }
-
-            // Remove the messages section from config.yml
-            removeMessagesFromConfig(configPath);
-
-            logger.info("Migrated messages from config.yml to messages.yml");
-            return true;
-        } catch (IOException e) {
-            logger.log(Level.WARNING, "Failed to migrate messages from config.yml", e);
-            return false;
-        }
-    }
-
-    /**
-     * Remove the messages: section and its preceding header comments from config.yml.
-     */
-    private void removeMessagesFromConfig(Path configPath) throws IOException {
-        java.util.List<String> lines = Files.readAllLines(configPath, StandardCharsets.UTF_8);
-
-        // Find the "messages:" line
-        int messagesStart = -1;
-        for (int i = 0; i < lines.size(); i++) {
-            String line = lines.get(i);
-            if (line.equals("messages:") || line.startsWith("messages: ")) {
-                messagesStart = i;
-                break;
-            }
-        }
-
-        if (messagesStart < 0) return;
-
-        // Find preceding comment/blank lines
-        int sectionStart = messagesStart;
-        for (int i = messagesStart - 1; i >= 0; i--) {
-            String line = lines.get(i);
-            if (line.isBlank() || line.stripLeading().startsWith("#")) {
-                sectionStart = i;
-            } else {
-                break;
-            }
-        }
-
-        // Find where the section ends (first non-indented content line after messages:)
-        // Be careful not to consume comment headers that belong to the next section
-        int sectionEnd = lines.size();
-        for (int i = messagesStart + 1; i < lines.size(); i++) {
-            String line = lines.get(i);
-            // Indented lines are part of the messages section
-            if (line.startsWith(" ") || line.startsWith("\t")) continue;
-            // Blank lines could be separators — check what follows
-            if (line.isBlank()) {
-                // Look ahead: if a non-indented content line follows (possibly after
-                // more blanks/comments), this blank is a section boundary
-                boolean nextSectionFollows = false;
-                for (int j = i + 1; j < lines.size(); j++) {
-                    String ahead = lines.get(j);
-                    if (ahead.isBlank()) continue;
-                    if (!ahead.startsWith(" ") && !ahead.startsWith("\t")
-                            && !ahead.stripLeading().startsWith("#")) {
-                        nextSectionFollows = true;
-                    }
-                    break;
-                }
-                if (nextSectionFollows) {
-                    sectionEnd = i;
-                    break;
-                }
-                continue;
-            }
-            // Non-indented comment — check if it belongs to the next section
-            if (line.stripLeading().startsWith("#")) {
-                // Look ahead: if a non-indented content line follows, this comment
-                // is a header for the next section — stop here
-                boolean nextSectionFollows = false;
-                for (int j = i + 1; j < lines.size(); j++) {
-                    String ahead = lines.get(j);
-                    if (ahead.isBlank() || ahead.stripLeading().startsWith("#")) continue;
-                    if (!ahead.startsWith(" ") && !ahead.startsWith("\t")) {
-                        nextSectionFollows = true;
-                    }
-                    break;
-                }
-                if (nextSectionFollows) {
-                    sectionEnd = i;
-                    break;
-                }
-                continue;
-            }
-            // Non-indented, non-blank, non-comment — next section's key
-            sectionEnd = i;
-            break;
-        }
-
-        // Rebuild config.yml without the messages section
-        java.util.List<String> remainingLines = new ArrayList<>();
-        for (int i = 0; i < sectionStart; i++) {
-            remainingLines.add(lines.get(i));
-        }
-        while (!remainingLines.isEmpty() && remainingLines.getLast().isBlank()) {
-            remainingLines.removeLast();
-        }
-        for (int i = sectionEnd; i < lines.size(); i++) {
-            remainingLines.add(lines.get(i));
-        }
-        Files.writeString(configPath, String.join("\n", remainingLines) + "\n", StandardCharsets.UTF_8);
     }
 
     private void mergeDefaults() {
