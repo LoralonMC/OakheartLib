@@ -168,6 +168,36 @@ public final class ConfigManager {
         }
     }
 
+    public List<Long> getLongList(String path) {
+        synchronized (getLock()) {
+            YamlNode node = resolve(path);
+            if (node == null || node.getType() != NodeType.SEQUENCE) {
+                return Collections.emptyList();
+            }
+            return node.asLongList();
+        }
+    }
+
+    public List<Double> getDoubleList(String path) {
+        synchronized (getLock()) {
+            YamlNode node = resolve(path);
+            if (node == null || node.getType() != NodeType.SEQUENCE) {
+                return Collections.emptyList();
+            }
+            return node.asDoubleList();
+        }
+    }
+
+    public List<Boolean> getBooleanList(String path) {
+        synchronized (getLock()) {
+            YamlNode node = resolve(path);
+            if (node == null || node.getType() != NodeType.SEQUENCE) {
+                return Collections.emptyList();
+            }
+            return node.asBooleanList();
+        }
+    }
+
     /**
      * Get a list of map items at the given path.
      * Each map item is returned as a {@code Map<String, Object>} with scalar values.
@@ -191,21 +221,44 @@ public final class ConfigManager {
             List<Map<String, Object>> result = new ArrayList<>();
             for (YamlNode item : node.getItems()) {
                 if (item.getType() == NodeType.MAP) {
-                    Map<String, Object> map = new LinkedHashMap<>();
-                    for (var entry : item.getChildren().entrySet()) {
-                        YamlNode child = entry.getValue();
-                        if (child.getType() == NodeType.SCALAR) {
-                            map.put(entry.getKey(), child.getRawValue());
-                        } else if (child.getType() == NodeType.SEQUENCE) {
-                            map.put(entry.getKey(), child.asStringList());
-                        }
-                        // Nested maps are not flattened — access via getMapList for deeper structures
-                    }
-                    result.add(map);
+                    result.add(mapNodeToMap(item));
                 }
             }
             return result;
         }
+    }
+
+    /**
+     * Convert a MAP node into a nested {@code Map<String, Object>}, recursing into
+     * nested maps and sequences so no structure is silently dropped. Scalar values
+     * are returned as their raw type; a sequence of scalars becomes a
+     * {@code List<String>}; a sequence of maps becomes a {@code List<Map<String, Object>>}.
+     */
+    private static Map<String, Object> mapNodeToMap(YamlNode mapNode) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        for (var entry : mapNode.getChildren().entrySet()) {
+            map.put(entry.getKey(), nodeToValue(entry.getValue()));
+        }
+        return map;
+    }
+
+    private static Object nodeToValue(YamlNode node) {
+        return switch (node.getType()) {
+            case SCALAR -> node.getRawValue();
+            case MAP -> mapNodeToMap(node);
+            case SEQUENCE -> {
+                boolean anyMap = node.getItems().stream()
+                        .anyMatch(i -> i.getType() == NodeType.MAP);
+                if (anyMap) {
+                    List<Object> items = new ArrayList<>(node.getItems().size());
+                    for (YamlNode item : node.getItems()) {
+                        items.add(nodeToValue(item));
+                    }
+                    yield items;
+                }
+                yield node.asStringList();
+            }
+        };
     }
 
     // ========================================

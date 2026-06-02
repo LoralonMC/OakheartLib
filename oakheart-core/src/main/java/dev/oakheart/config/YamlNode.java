@@ -181,6 +181,33 @@ public final class YamlNode {
         return result;
     }
 
+    public List<Long> asLongList() {
+        if (items == null) return Collections.emptyList();
+        List<Long> result = new ArrayList<>(items.size());
+        for (YamlNode item : items) {
+            result.add(item.asLong(0L));
+        }
+        return result;
+    }
+
+    public List<Double> asDoubleList() {
+        if (items == null) return Collections.emptyList();
+        List<Double> result = new ArrayList<>(items.size());
+        for (YamlNode item : items) {
+            result.add(item.asDouble(0.0));
+        }
+        return result;
+    }
+
+    public List<Boolean> asBooleanList() {
+        if (items == null) return Collections.emptyList();
+        List<Boolean> result = new ArrayList<>(items.size());
+        for (YamlNode item : items) {
+            result.add(item.asBoolean(false));
+        }
+        return result;
+    }
+
     // --- Mutation (package-private) ---
 
     void setType(NodeType type) {
