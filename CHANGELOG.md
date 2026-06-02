@@ -11,6 +11,11 @@ developer building against the library.
 
 ## [Unreleased]
 
+### Added
+
+- `ConfigMigrator` — a version-gated migration runner for the structural config changes `mergeDefaults` deliberately won't make (renamed / removed / restructured keys). Steps declare the version they upgrade *to* and run only on older files; the config is stamped with the highest version reached. Steps are idempotent, so a missed save just re-runs harmlessly.
+- `ConfigManager.renameKey(oldPath, newPath)` (scalar and list values; sections throw for now) and `ConfigManager.removeKey(path)` (returns whether the key existed) as building blocks for migration steps.
+
 ## [1.3.0] - 2026-06-02
 
 ### Added

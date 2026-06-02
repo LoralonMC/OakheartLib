@@ -424,6 +424,52 @@ public final class ConfigManager {
         }
     }
 
+    /**
+     * Remove a key if present and report whether it existed. Convenience wrapper
+     * around {@link #remove(String)} for migration steps that want to know whether
+     * a change occurred.
+     *
+     * @return true if the key existed and was removed
+     */
+    public boolean removeKey(String path) {
+        synchronized (getLock()) {
+            if (!contains(path)) return false;
+            remove(path);
+            return true;
+        }
+    }
+
+    /**
+     * Rename a key, preserving its value. Moves the value from {@code oldPath} to
+     * {@code newPath} and removes the old key. No-op (returns false) if the old key
+     * is absent or the new key already exists — so re-running a migration is safe.
+     *
+     * <p>Prototype scope: supports scalar and list values. Renaming a whole section
+     * (map) throws {@link UnsupportedOperationException} — restructure those with a
+     * sequence of explicit {@code set}/{@code removeKey} calls for now. The new key
+     * is written without the old key's leading comment; if the new key is also a
+     * default, {@link #mergeDefaults} supplies its comment on the same run.</p>
+     *
+     * @return true if the rename was performed
+     */
+    public boolean renameKey(String oldPath, String newPath) {
+        synchronized (getLock()) {
+            YamlNode node = resolve(oldPath);
+            if (node == null || contains(newPath)) return false;
+
+            Object value = switch (node.getType()) {
+                case SCALAR -> node.getRawValue();
+                case SEQUENCE -> node.asStringList();
+                case MAP -> throw new UnsupportedOperationException(
+                        "renameKey does not support section (map) values yet: " + oldPath);
+            };
+
+            set(newPath, value);
+            remove(oldPath);
+            return true;
+        }
+    }
+
     private void updateExistingScalar(YamlNode node, Object value, YamlDocument doc) {
         // Determine quote style: preserve existing, or choose appropriate for new values
         YamlNode.QuoteStyle style = node.getQuoteStyle();
