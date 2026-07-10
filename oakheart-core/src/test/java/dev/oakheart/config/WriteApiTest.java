@@ -212,4 +212,92 @@ class WriteApiTest {
         assertTrue(output.contains("'value: with colon'") || output.contains("\"value: with colon\""),
                 "String with colon should be quoted: " + output);
     }
+
+    // ── Regression tests for the 2026-07-09 review findings ──
+
+    @Test
+    void setFlowStyleListRewritesAsParseableBlock() {
+        // Bug: removing a flow sequence's "item lines" removed the KEY line
+        // itself, leaving orphaned block items and an unparseable file.
+        ConfigManager config = ConfigManager.fromString("""
+                before: 1
+                key: [a, b, c]
+                after: 2
+                """);
+
+        config.set("key", List.of("x", "y"));
+
+        String output = config.getDocument().serialize();
+        ConfigManager reparsed = ConfigManager.fromString(output);
+        assertEquals(List.of("x", "y"), reparsed.getStringList("key"),
+                "Flow list should round-trip through set(): " + output);
+        assertEquals(1, reparsed.getInt("before"));
+        assertEquals(2, reparsed.getInt("after"));
+    }
+
+    @Test
+    void setFlowStyleListPreservesInlineComment() {
+        ConfigManager config = ConfigManager.fromString(
+                "key: [a, b] # keep me");
+
+        config.set("key", List.of("x"));
+
+        String output = config.getDocument().serialize();
+        assertTrue(output.contains("# keep me"), "Inline comment should survive: " + output);
+        assertEquals(List.of("x"), ConfigManager.fromString(output).getStringList("key"));
+    }
+
+    @Test
+    void sectionViewNewKeyStaysInsideSection() {
+        // Bug: a NEW key created through getSection(...) was written at indent 0,
+        // silently relocating it to the document root.
+        ConfigManager config = ConfigManager.fromString("""
+                database:
+                  host: localhost
+                  port: 3306
+                other: true
+                """);
+
+        config.getSection("database").set("username", "admin");
+
+        String output = config.getDocument().serialize();
+        ConfigManager reparsed = ConfigManager.fromString(output);
+        assertEquals("admin", reparsed.getString("database.username"),
+                "New key must live under the section: " + output);
+        assertNull(reparsed.getString("username"),
+                "New key must not leak to the root: " + output);
+        assertEquals(true, reparsed.getBoolean("other"));
+    }
+
+    @Test
+    void setStringWithNewlineRoundTrips() {
+        // Bug: a raw newline was written unescaped, splitting the value across
+        // physical lines; the remainder became a junk line silently dropped on
+        // the next parse.
+        ConfigManager config = ConfigManager.fromString("""
+                greeting: hello
+                after: 1
+                """);
+
+        config.set("greeting", "line1\nline2");
+
+        String output = config.getDocument().serialize();
+        ConfigManager reparsed = ConfigManager.fromString(output);
+        assertEquals("line1\nline2", reparsed.getString("greeting"),
+                "Newline strings must round-trip: " + output);
+        assertEquals(1, reparsed.getInt("after"));
+    }
+
+    @Test
+    void setStringWithLeadingTrailingWhitespaceRoundTrips() {
+        ConfigManager config = ConfigManager.fromString("""
+                key: plain
+                """);
+
+        config.set("key", "  padded  ");
+
+        String output = config.getDocument().serialize();
+        assertEquals("  padded  ", ConfigManager.fromString(output).getString("key"),
+                "Padded strings must round-trip: " + output);
+    }
 }

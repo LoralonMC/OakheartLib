@@ -476,6 +476,13 @@ public final class ConfigManager {
         if (value instanceof String s && style == YamlNode.QuoteStyle.UNQUOTED && needsQuoting(s)) {
             style = YamlNode.QuoteStyle.SINGLE_QUOTED;
         }
+        // Regardless of the preserved style: only double quoting can escape
+        // line breaks and control characters — writing them raw (or inside
+        // single quotes) splits the value across physical lines and corrupts it.
+        if (value instanceof String s && style != YamlNode.QuoteStyle.DOUBLE_QUOTED
+                && containsLineBreakOrControl(s)) {
+            style = YamlNode.QuoteStyle.DOUBLE_QUOTED;
+        }
 
         // Update the node
         node.setScalarValue(value, style);
@@ -520,7 +527,20 @@ public final class ConfigManager {
         int firstItemLine = items.getFirst().getFirstLine();
         int lastItemLine = items.getLast().getLastLine();
 
-        if (firstItemLine >= 0 && lastItemLine >= firstItemLine) {
+        if (firstItemLine == seqNode.getKeyLineIndex()) {
+            // Flow-style sequence (`key: [a, b]`): the item nodes share the KEY
+            // line, so removing their line range deletes the key itself — the
+            // block items inserted afterwards then have no parent key, and the
+            // file fails to parse on its next load (a failed plugin onEnable).
+            // Rewrite the key line to a bare `key:` instead; the caller inserts
+            // block-style items beneath it, which is the documented behavior
+            // for mutating a flow sequence.
+            String indentStr = " ".repeat(Math.max(0, seqNode.getIndent()));
+            String comment = seqNode.getInlineComment();
+            String bareKeyLine = indentStr + seqNode.getKey() + ":"
+                    + (comment != null && !comment.isBlank() ? " " + comment : "");
+            doc.replaceLine(seqNode.getKeyLineIndex(), bareKeyLine);
+        } else if (firstItemLine >= 0 && lastItemLine >= firstItemLine) {
             doc.removeLines(firstItemLine, lastItemLine + 1);
         }
         seqNode.clearItems();
@@ -562,7 +582,7 @@ public final class ConfigManager {
                 current = child;
             } else if (child == null) {
                 // Need to create intermediate section
-                int parentIndent = current == getBaseNode() ? -2 : current.getIndent();
+                int parentIndent = current == doc.getRoot() ? -2 : current.getIndent();
                 int newIndent = parentIndent + 2;
                 int insertAt = findInsertionPoint(current, doc);
 
@@ -581,7 +601,11 @@ public final class ConfigManager {
 
         // Insert the final key
         String finalKey = segments[segments.length - 1];
-        int parentIndent = current == getBaseNode() ? -2 : current.getIndent();
+        // Compared against the DOCUMENT root, not getBaseNode(): for a section
+        // view the base node IS the section, and treating it as the root gave
+        // new keys indent 0 — silently relocating them to the top level while
+        // the in-memory tree still showed them under the section.
+        int parentIndent = current == doc.getRoot() ? -2 : current.getIndent();
         int newIndent = parentIndent + 2;
         int insertAt = findInsertionPoint(current, doc);
         String indentStr = newIndent >= 0 ? " ".repeat(newIndent) : "";
@@ -606,7 +630,7 @@ public final class ConfigManager {
             if (child != null && child.getType() == NodeType.MAP) {
                 current = child;
             } else if (child == null) {
-                int parentIndent = current == getBaseNode() ? -2 : current.getIndent();
+                int parentIndent = current == doc.getRoot() ? -2 : current.getIndent();
                 int newIndent = parentIndent + 2;
                 int insertAt = findInsertionPoint(current, doc);
 
@@ -625,7 +649,11 @@ public final class ConfigManager {
 
         // Insert sequence key line
         String finalKey = segments[segments.length - 1];
-        int parentIndent = current == getBaseNode() ? -2 : current.getIndent();
+        // Compared against the DOCUMENT root, not getBaseNode(): for a section
+        // view the base node IS the section, and treating it as the root gave
+        // new keys indent 0 — silently relocating them to the top level while
+        // the in-memory tree still showed them under the section.
+        int parentIndent = current == doc.getRoot() ? -2 : current.getIndent();
         int newIndent = parentIndent + 2;
         int insertAt = findInsertionPoint(current, doc);
         String indentStr = newIndent >= 0 ? " ".repeat(newIndent) : "";
@@ -675,11 +703,18 @@ public final class ConfigManager {
         return s.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
                 .replace("\n", "\\n")
+                .replace("\r", "\\r")
                 .replace("\t", "\\t");
     }
 
     private static boolean needsQuoting(String value) {
         if (value.isEmpty()) return true;
+        // Line breaks and control characters written raw split the value across
+        // physical lines (the remainder becomes a junk line that a reparse
+        // silently drops); leading/trailing whitespace is stripped by a reparse.
+        // Both must force quoting.
+        if (containsLineBreakOrControl(value)) return true;
+        if (!value.equals(value.strip())) return true;
         // Check for YAML special characters that require quoting
         if (value.startsWith("#") || value.startsWith("&") || value.startsWith("*") ||
                 value.startsWith("!") || value.startsWith("|") || value.startsWith(">") ||
@@ -705,9 +740,23 @@ public final class ConfigManager {
 
     private static YamlNode.QuoteStyle chooseStyle(Object value) {
         if (value instanceof String s) {
+            // Single quotes cannot escape line breaks or control characters —
+            // only the DOUBLE_QUOTED branch escapes them — so such strings must
+            // use double quoting or the written file is corrupted.
+            if (containsLineBreakOrControl(s)) return YamlNode.QuoteStyle.DOUBLE_QUOTED;
             return needsQuoting(s) ? YamlNode.QuoteStyle.SINGLE_QUOTED : YamlNode.QuoteStyle.UNQUOTED;
         }
         return YamlNode.QuoteStyle.UNQUOTED;
+    }
+
+    private static boolean containsLineBreakOrControl(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '\n' || c == '\r' || (c < 0x20 && c != '\t') || c == 0x7F) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ========================================

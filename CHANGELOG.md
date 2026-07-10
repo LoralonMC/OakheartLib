@@ -11,6 +11,31 @@ developer building against the library.
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-07-10
+
+Bug-fix release for the three ConfigManager write-path corruption findings from
+the 2026-07-09 plugin review. Read-only usage was never affected.
+
+### Fixed
+- `set()` on a flow-style list (`key: [a, b, c]`) deleted the key line and wrote
+  orphaned block items, producing a file that failed to parse on the next load
+  (plugin onEnable failure). The key line is now rewritten in place (inline
+  comment preserved) and the new items are emitted block-style beneath it.
+- A NEW key created through a section view (`getSection("db").set("user", ...)`)
+  was written at indent 0, silently relocating it to the document root while the
+  in-memory tree still showed it under the section. Root detection now compares
+  against the document root instead of the view's base node.
+- Strings containing line breaks / control characters were written raw (or
+  inside single quotes), splitting the value across physical lines; the
+  remainder became a junk line silently dropped by the next parse. Such strings
+  now force DOUBLE_QUOTED style on every write path, `\r` is escaped and
+  unescaped symmetrically, and leading/trailing whitespace forces quoting.
+
+### Notes for plugin bumps
+- No API changes; drop-in replacement for 1.3.0 (and safe target for plugins
+  still pinned to 1.2.0, subject to the 1.3.0 `getMapList` shape change noted
+  below).
+
 ## [1.3.0] - 2026-06-02
 
 ### Added

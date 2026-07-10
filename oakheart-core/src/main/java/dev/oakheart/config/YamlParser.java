@@ -645,6 +645,7 @@ public final class YamlParser {
                 char next = s.charAt(i + 1);
                 switch (next) {
                     case 'n' -> { sb.append('\n'); i++; }
+                    case 'r' -> { sb.append('\r'); i++; }
                     case 't' -> { sb.append('\t'); i++; }
                     case '\\' -> { sb.append('\\'); i++; }
                     case '"' -> { sb.append('"'); i++; }
