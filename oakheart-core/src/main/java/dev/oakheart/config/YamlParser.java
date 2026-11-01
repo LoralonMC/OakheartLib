@@ -33,6 +33,10 @@ public final class YamlParser {
                     new YamlNode(null, NodeType.MAP, -1, -1));
         }
 
+        // A UTF-8 BOM (written by some editors) would otherwise become part of the first key.
+        if (text.charAt(0) == '\uFEFF') {
+            text = text.substring(1);
+        }
         // Split lines preserving trailing empty line if file ends with newline
         List<String> rawLines = splitLines(text);
         return parse(rawLines);
@@ -198,6 +202,14 @@ public final class YamlParser {
                 seq.addItem(item);
             }
             parent.addChild(key, seq);
+        } else if (isEmptyFlowMap(rawValue)) {
+            // `key: {}` is an empty section, not the string "{}". Writing into it rewrites the
+            // key line as a plain `key:` with block children (see ConfigManager).
+            YamlNode map = new YamlNode(key, NodeType.MAP, lineIndex, indent);
+            map.setInlineComment(inlineComment);
+            map.setLeadingCommentLines(new ArrayList<>(pendingComments));
+            pendingComments.clear();
+            parent.addChild(key, map);
         } else {
             // Parse scalar value
             YamlNode node = new YamlNode(key, NodeType.SCALAR, lineIndex, indent);
@@ -213,6 +225,14 @@ public final class YamlParser {
      * Returns true if the raw value is a flow-style sequence ({@code [...]}).
      * Doesn't validate inner content — that's done during element parsing.
      */
+    /** {@code {}} (whitespace allowed inside): an empty flow map, i.e. an empty section. */
+    static boolean isEmptyFlowMap(String rawValue) {
+        if (rawValue == null) return false;
+        String v = rawValue.trim();
+        return v.length() >= 2 && v.charAt(0) == '{' && v.charAt(v.length() - 1) == '}'
+                && v.substring(1, v.length() - 1).isBlank();
+    }
+
     private static boolean isFlowSequence(String rawValue) {
         return rawValue.length() >= 2
                 && rawValue.charAt(0) == '['
@@ -420,6 +440,23 @@ public final class YamlParser {
                         stack.add(new StackEntry(indent, mapItem));
                     }
                 }
+            } else if (isFlowSequence(firstRawValue)) {
+                // "- key: [a, b]": built exactly as parseMapEntry builds a flow sequence. Read as
+                // a string before, while the same list on any later key of the item was a list.
+                YamlNode child = new YamlNode(firstKey, NodeType.SEQUENCE, lineIndex, mapItemIndent);
+                child.setInlineComment(firstInlineComment);
+                for (String element : parseFlowSequenceElements(firstRawValue, lineIndex + 1, lines.get(lineIndex).text())) {
+                    YamlNode item = new YamlNode(null, NodeType.SCALAR, lineIndex, mapItemIndent);
+                    parseAndSetScalar(item, element);
+                    child.addItem(item);
+                }
+                mapItem.addChild(firstKey, child);
+                stack.add(new StackEntry(indent, mapItem));
+            } else if (isEmptyFlowMap(firstRawValue)) {
+                YamlNode child = new YamlNode(firstKey, NodeType.MAP, lineIndex, mapItemIndent);
+                child.setInlineComment(firstInlineComment);
+                mapItem.addChild(firstKey, child);
+                stack.add(new StackEntry(indent, mapItem));
             } else {
                 // "- key: value" with a scalar value on the same line
                 YamlNode child = new YamlNode(firstKey, NodeType.SCALAR, lineIndex, mapItemIndent);
@@ -624,9 +661,16 @@ public final class YamlParser {
                     i++; // skip escaped quote
                     continue;
                 }
-                // For double quotes, check for backslash escape
-                if (quoteChar == '"' && i > 0 && value.charAt(i - 1) == '\\') {
-                    continue;
+                // For double quotes, an odd run of backslashes escapes the quote; an even run is
+                // escaped backslashes, so `"C:\\"` closes at its last quote.
+                if (quoteChar == '"') {
+                    int backslashes = 0;
+                    for (int j = i - 1; j > 0 && value.charAt(j) == '\\'; j--) {
+                        backslashes++;
+                    }
+                    if (backslashes % 2 == 1) {
+                        continue;
+                    }
                 }
                 return i;
             }
@@ -646,10 +690,35 @@ public final class YamlParser {
                 switch (next) {
                     case 'n' -> { sb.append('\n'); i++; }
                     case 'r' -> { sb.append('\r'); i++; }
-                    case 't' -> { sb.append('\t'); i++; }
+                    case 't', '\t' -> { sb.append('\t'); i++; }
                     case '\\' -> { sb.append('\\'); i++; }
                     case '"' -> { sb.append('"'); i++; }
                     case '/' -> { sb.append('/'); i++; }
+                    case '0' -> { sb.append('\0'); i++; }
+                    case 'a' -> { sb.append('\u0007'); i++; }
+                    case 'b' -> { sb.append('\b'); i++; }
+                    case 'e' -> { sb.append('\u001B'); i++; }
+                    case 'f' -> { sb.append('\f'); i++; }
+                    case 'v' -> { sb.append('\u000B'); i++; }
+                    case ' ' -> { sb.append(' '); i++; }
+                    case '_' -> { sb.append('\u00A0'); i++; }
+                    case 'N' -> { sb.append('\u0085'); i++; }
+                    case 'L' -> { sb.append('\u2028'); i++; }
+                    case 'P' -> { sb.append('\u2029'); i++; }
+                    case 'x', 'u', 'U' -> {
+                        // Backslash x/u/U followed by 2/4/8 hex digits (YAML 1.2). Left as written if malformed.
+                        int digits = next == 'x' ? 2 : next == 'u' ? 4 : 8;
+                        String hex = i + 2 + digits <= s.length() ? s.substring(i + 2, i + 2 + digits) : "";
+                        long codePoint = hex.length() == digits
+                                && hex.chars().allMatch(ch -> Character.digit(ch, 16) >= 0)
+                                ? Long.parseLong(hex, 16) : -1;
+                        if (codePoint >= 0 && codePoint <= Character.MAX_CODE_POINT) {
+                            sb.appendCodePoint((int) codePoint);
+                            i += 1 + digits;
+                        } else {
+                            sb.append(c);
+                        }
+                    }
                     default -> sb.append(c);
                 }
             } else {

@@ -421,6 +421,74 @@ public final class ConfigManager {
 
             // Remove from tree
             parent.removeChild(targetKey);
+
+            // A section left with no children used to be saved as a bare `key:`, which reloads
+            // as a null value that nothing can be written under again. `key: {}` reloads as the
+            // empty section it is.
+            if (parent.getType() == NodeType.MAP && parent.getChildren().isEmpty()
+                    && parent.getKey() != null && parent != doc.getRoot()) {
+                rewriteKeyLine(parent, " {}", doc);
+            }
+        }
+    }
+
+    /**
+     * Rewrites a node's key line as {@code key:<suffix>}, keeping its indent and inline comment.
+     * Used to switch between a placeholder ({@code {}}, {@code []}) and a plain {@code key:} that
+     * block children follow.
+     */
+    private static void rewriteKeyLine(YamlNode node, String suffix, YamlDocument doc) {
+        int lineIdx = node.getKeyLineIndex();
+        if (lineIdx < 0 || lineIdx >= doc.lineCount() || node.getKey() == null) {
+            return;
+        }
+        String indentStr = " ".repeat(Math.max(0, node.getIndent()));
+        String comment = node.getInlineComment();
+        String line = indentStr + node.getKey() + ":" + suffix
+                + (comment != null && !comment.isBlank() ? "  " + comment : "");
+        doc.replaceLine(lineIdx, line);
+    }
+
+    /** About to add a child under {@code section}: drop a {@code {}} placeholder first. */
+    private static void openSection(YamlNode section, YamlDocument doc) {
+        if (section.getKey() != null && section.getType() == NodeType.MAP && section.getChildren().isEmpty()
+                && section != doc.getRoot() && !keyLineValue(section, doc).isEmpty()) {
+            rewriteKeyLine(section, "", doc);
+        }
+    }
+
+    /** What follows {@code key:} on a node's key line, inline comment excluded, trimmed. */
+    private static String keyLineValue(YamlNode node, YamlDocument doc) {
+        int lineIdx = node.getKeyLineIndex();
+        if (lineIdx < 0 || lineIdx >= doc.lineCount() || node.getKey() == null) {
+            return "";
+        }
+        String text = doc.getLines().get(lineIdx).text();
+        String comment = node.getInlineComment();
+        if (comment != null && !comment.isBlank()) {
+            int at = text.lastIndexOf(comment);
+            if (at >= 0) {
+                text = text.substring(0, at);
+            }
+        }
+        int colon = text.indexOf(':', text.indexOf(node.getKey()) + node.getKey().length());
+        return colon < 0 ? "" : text.substring(colon + 1).trim();
+    }
+
+    /**
+     * A bare {@code key:} with nothing under it parses as a null value (that is what earlier
+     * versions saved for an emptied section or list). It is a placeholder, not data, so writing
+     * a child or a list into it converts it in place instead of failing.
+     */
+    private static boolean isNullPlaceholder(YamlNode node) {
+        return node.getType() == NodeType.SCALAR && node.getRawValue() == null;
+    }
+
+    private static void convertPlaceholder(YamlNode node, NodeType type, YamlDocument doc) {
+        node.setType(type);
+        node.setScalarValue(null, YamlNode.QuoteStyle.UNQUOTED);
+        if (!keyLineValue(node, doc).isEmpty()) {
+            rewriteKeyLine(node, "", doc); // `key: ~` or `key: null`
         }
     }
 
@@ -459,7 +527,19 @@ public final class ConfigManager {
 
             Object value = switch (node.getType()) {
                 case SCALAR -> node.getRawValue();
-                case SEQUENCE -> node.asStringList();
+                case SEQUENCE -> {
+                    // Item values, not asStringList(): that turned numbers and booleans into
+                    // strings and every map item into '' (silently wiping a list of maps).
+                    List<Object> items = new ArrayList<>();
+                    for (YamlNode item : node.getItems()) {
+                        if (item.getType() != NodeType.SCALAR) {
+                            throw new UnsupportedOperationException(
+                                    "renameKey does not support lists of sections yet: " + oldPath);
+                        }
+                        items.add(item.getRawValue());
+                    }
+                    yield items;
+                }
                 case MAP -> throw new UnsupportedOperationException(
                         "renameKey does not support section (map) values yet: " + oldPath);
             };
@@ -508,6 +588,9 @@ public final class ConfigManager {
             // Remove old items, insert new ones
             removeSequenceItems(existing, doc);
             insertSequenceItems(existing, values, doc);
+        } else if (existing != null && isNullPlaceholder(existing)) {
+            convertPlaceholder(existing, NodeType.SEQUENCE, doc);
+            insertSequenceItems(existing, values, doc);
         } else if (existing != null && existing.getType() == NodeType.SCALAR) {
             throw new IllegalArgumentException(
                     "Cannot overwrite scalar '" + path + "' with a list. Use remove() first.");
@@ -547,6 +630,14 @@ public final class ConfigManager {
     }
 
     private void insertSequenceItems(YamlNode seqNode, List<Object> values, YamlDocument doc) {
+        // An empty list is written `key: []` (a bare `key:` reloads as a null value); a non-empty
+        // one as a plain `key:` with block items, so a `[]` placeholder is cleared first.
+        String rest = keyLineValue(seqNode, doc);
+        if (values.isEmpty() && !rest.equals("[]")) {
+            rewriteKeyLine(seqNode, " []", doc);
+        } else if (!values.isEmpty() && !rest.isEmpty()) {
+            rewriteKeyLine(seqNode, "", doc);
+        }
         int insertAt = seqNode.getKeyLineIndex() + 1;
         int itemIndent = seqNode.getIndent() + 2;
         String indentStr = " ".repeat(itemIndent);
@@ -578,10 +669,14 @@ public final class ConfigManager {
 
         for (int i = 0; i < segments.length - 1; i++) {
             YamlNode child = current.getChild(segments[i]);
+            if (child != null && isNullPlaceholder(child)) {
+                convertPlaceholder(child, NodeType.MAP, doc);
+            }
             if (child != null && child.getType() == NodeType.MAP) {
                 current = child;
             } else if (child == null) {
                 // Need to create intermediate section
+                openSection(current, doc);
                 int parentIndent = current == doc.getRoot() ? -2 : current.getIndent();
                 int newIndent = parentIndent + 2;
                 int insertAt = findInsertionPoint(current, doc);
@@ -600,6 +695,7 @@ public final class ConfigManager {
         }
 
         // Insert the final key
+        openSection(current, doc);
         String finalKey = segments[segments.length - 1];
         // Compared against the DOCUMENT root, not getBaseNode(): for a section
         // view the base node IS the section, and treating it as the root gave
@@ -627,9 +723,13 @@ public final class ConfigManager {
         YamlNode current = getBaseNode();
         for (int i = 0; i < segments.length - 1; i++) {
             YamlNode child = current.getChild(segments[i]);
+            if (child != null && isNullPlaceholder(child)) {
+                convertPlaceholder(child, NodeType.MAP, doc);
+            }
             if (child != null && child.getType() == NodeType.MAP) {
                 current = child;
             } else if (child == null) {
+                openSection(current, doc);
                 int parentIndent = current == doc.getRoot() ? -2 : current.getIndent();
                 int newIndent = parentIndent + 2;
                 int insertAt = findInsertionPoint(current, doc);
@@ -648,6 +748,7 @@ public final class ConfigManager {
         }
 
         // Insert sequence key line
+        openSection(current, doc);
         String finalKey = segments[segments.length - 1];
         // Compared against the DOCUMENT root, not getBaseNode(): for a section
         // view the base node IS the section, and treating it as the root gave

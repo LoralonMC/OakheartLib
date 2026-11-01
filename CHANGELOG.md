@@ -11,6 +11,39 @@ developer building against the library.
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-11-01
+
+Bug-fix release for the 2026-11-01 plugin review (LIB-01, 02, 05, 07, 08, 10, 13, 14). No API
+changes; drop-in for 1.3.x. Live Oak* configs read identically (checked against prod).
+
+### Fixed
+- `mergeDefaults` shifted an inserted key's leading-comment line indices twice, so a following
+  `syncComments` or `remove()` acted on the wrong lines: an admin's value could be deleted and
+  silently reset to the default, or a section key removed so its children moved to the root.
+- An emptied section or list was saved as a bare `key:`, which reloads as a null value; every later
+  `set()` under it then threw ("exists but is not a section" / "Cannot overwrite scalar"). Emptied
+  sections are now written `key: {}` and empty lists `key: []`; `{}` parses as an empty section,
+  and writing into either placeholder rewrites it as block style. A bare `key:` left on disk by
+  earlier versions is treated as a placeholder too, so files already affected recover on the next
+  write.
+- A flow list on the first key of a sequence-of-maps item (`- types: [A, B]`) was read as the
+  string `"[A, B]"` while the same list on any later key was a list.
+- A leading UTF-8 BOM became part of the first key, so its value was ignored and the default
+  merged in beside it.
+- `renameKey` on a list of maps replaced every item with `''`, and turned numbers and booleans into
+  strings. Typed scalar lists now keep their types; lists of sections throw
+  `UnsupportedOperationException`, as sections already did.
+- Double-quoted strings now decode the YAML 1.2 escapes `\uXXXX`, `\UXXXXXXXX`, `\xXX`, `\0`,
+  `\a`, `\b`, `\e`, `\f`, `\v`, `\ `, `\_`, `\N`, `\L`, `\P`. `\\` is still read first, so a
+  deliberately escaped `"\\uE721"` stays literal. Malformed escapes are kept as written.
+- A double-quoted value ending in an escaped backslash (`"C:\\"`) swallowed its inline comment.
+- `MessageManager.reload()` let a `YamlParseException` escape, aborting the caller's reload
+  halfway. It now logs the error and keeps the previous messages.
+
+### Notes for plugin bumps
+- Plugins that keep data in a ConfigManager (OakShelves, TogglePhantoms' YAML storage) should bump:
+  that is what fixes their "emptied collection breaks after restart" bug.
+
 ## [1.3.1] - 2026-07-10
 
 Bug-fix release for the three ConfigManager write-path corruption findings from

@@ -149,9 +149,10 @@ public final class YamlMerger {
             YamlNode insertedNode = tempRoot.getChild(insertedKey);
 
             // Shift the temp node's line indices to match actual positions in user doc
+            // shiftNodeIndices shifts the leading comment lines too. Shifting them again here
+            // (as earlier versions did) put them at twice the offset, so a following
+            // syncComments or remove() acted on the wrong lines and deleted admin values.
             shiftNodeIndices(insertedNode, insertion.lineIndex);
-            insertedNode.setLeadingCommentLines(
-                    shiftIndices(insertedNode.getLeadingCommentLines(), insertion.lineIndex));
 
             // Insert into tree at the correct position (matching line order)
             if (insertion.afterKey != null) {

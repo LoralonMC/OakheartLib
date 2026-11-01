@@ -1,6 +1,7 @@
 package dev.oakheart.message;
 
 import dev.oakheart.config.ConfigManager;
+import dev.oakheart.config.YamlParseException;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -97,8 +98,11 @@ public class MessageManager {
     public void reload() {
         try {
             config.reload();
-        } catch (IOException e) {
-            logger.log(Level.WARNING, "Failed to reload messages.yml", e);
+        } catch (IOException | YamlParseException e) {
+            // A typo in messages.yml must not abort the plugin's whole reload halfway; the
+            // previous messages stay in use and the log says where the file is broken.
+            logger.log(Level.WARNING, "Failed to reload messages.yml, keeping the previous messages: "
+                    + e.getMessage(), e);
             return;
         }
         mergeDefaults();
