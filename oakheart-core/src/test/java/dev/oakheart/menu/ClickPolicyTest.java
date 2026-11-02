@@ -90,4 +90,13 @@ class ClickPolicyTest {
         // A locked menu cancels even a drag that stays in the bottom inventory.
         assertEquals(Decision.CANCEL, decideDrag(Set.of(30, 40), TOP, INPUTS, true));
     }
+
+    @Test
+    void onlyLeftAndRightClicksPressButtons() {
+        for (ClickType type : ClickType.values()) {
+            boolean expected = type == ClickType.LEFT || type == ClickType.RIGHT
+                    || type == ClickType.SHIFT_LEFT || type == ClickType.SHIFT_RIGHT;
+            assertEquals(expected, ClickPolicy.isPress(type), type.name());
+        }
+    }
 }

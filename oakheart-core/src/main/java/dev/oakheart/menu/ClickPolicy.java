@@ -80,6 +80,16 @@ public final class ClickPolicy {
     }
 
     /**
+     * Whether a click on a display slot presses its button: a left or right click, plain or with
+     * shift. Q (drop), number keys, the offhand key, middle click, a double click's second half and
+     * creative actions do not, so a stray key over a menu never triggers anything.
+     */
+    public static boolean isPress(ClickType click) {
+        return click == ClickType.LEFT || click == ClickType.RIGHT
+                || click == ClickType.SHIFT_LEFT || click == ClickType.SHIFT_RIGHT;
+    }
+
+    /**
      * Decides one drag. Never returns {@link Decision#SHIFT_INSERT}.
      *
      * @param rawSlots   the event's raw slots
