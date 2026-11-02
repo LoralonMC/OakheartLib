@@ -11,6 +11,33 @@ developer building against the library.
 
 ## [Unreleased]
 
+1.4.0 in progress, published to mavenLocal as `1.4.0-dev`. Design: vault `Design/OakheartLib 1.4.md`.
+This first part holds the components the design review cleared to build as written; menus, item
+custody, item delivery and YAML storage follow after an OakSmith prototype.
+
+### Added
+- `dev.oakheart.menu.ClickPolicy`: pure click and drag rules for menus with input slots. Cancels
+  double-click collection everywhere (the OakSmith preview dupe, G1-01).
+- `dev.oakheart.menu.DisplayItems` and `DisplayGuards`: the shared `oakheart:display` icon mark,
+  and listeners that delete marked stacks that escape a menu (drop clicks, drops, entity and hopper
+  pickups, item spawns, a sweep on menu close and join), each removal logged at WARNING.
+- `dev.oakheart.item.BlockCustody`: snapshot-all, then remove without drops (live contents, furnace
+  recipe XP, campfire items), and restore. Lifted from OakRewind 1.2.2.
+- `dev.oakheart.item.VoucherRedeemer`: two-phase voucher redemption with a single-use token,
+  same-hand re-check, consume-after-grant and `saveData()`; denies the clicked block's use, ignores
+  item frames, debounces per tick, refuses CREATIVE/SPECTATOR by default.
+- `dev.oakheart.storage.SerialWriter`: single-thread FIFO writer with `submitLatest` superseding
+  and a bounded `drain` that fails abandoned futures instead of leaving them pending.
+- `dev.oakheart.storage.SqliteStore`: writer thread plus synchronous reader over Paper's bundled
+  driver, WAL, `user_version` migrations in one transaction, legacy version bridge and mirror,
+  refusal to open a newer schema.
+- `dev.oakheart.util.MainThread.require`.
+
+### Changed
+- oakheart-core compiles against paper-api 26.3.
+- Plugins on 1.4 must relocate `dev.oakheart.menu`, `dev.oakheart.item` and
+  `dev.oakheart.storage`; `DisplayGuards.register` refuses to run unrelocated.
+
 ## [1.3.2] - 2026-11-01
 
 Bug-fix release for the 2026-11-01 plugin review (LIB-01, 02, 05, 07, 08, 10, 13, 14). No API

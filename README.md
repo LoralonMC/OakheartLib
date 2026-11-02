@@ -1,12 +1,12 @@
 # OakheartLib
 
-A shared library for [Oakheart SMP](https://github.com/LoralonMC) Paper plugins. Java 21, Paper 1.21.10.
+A shared library for [Oakheart SMP](https://github.com/LoralonMC) Paper plugins. Java 25, Paper 26.3.
 
 ## Structure
 
 | Module | Artifact | Description |
 |--------|----------|-------------|
-| **oakheart-core** | `dev.oakheart:oakheart-core` | Config engine, message helpers, command registration, debug logging |
+| **oakheart-core** | `dev.oakheart:oakheart-core` | Config engine, message helpers, command registration, debug logging, menu click rules and display guards, block custody, vouchers, async storage |
 | **oakheart-models** | `dev.oakheart:oakheart-models` | Model provider system (Nexo, ItemsAdder, vanilla, Item Model) |
 
 ## oakheart-core
@@ -83,6 +83,41 @@ DebugLogger debug = new DebugLogger(logger, configManager::isDebugMode);
 debug.log("Processing %d items for %s", items.size(), playerName);
 ```
 
+### Menu safety (`dev.oakheart.menu`), 1.4
+
+- `ClickPolicy.decideClick` / `decideDrag`: the click and drag rules for a menu with optional input slots (pure, unit-tested; see the class Javadoc for the table).
+- `DisplayItems.mark(icon)` stamps an icon `oakheart:display`; `DisplayItems.isDisplay(stack)` recognises any plugin's icons.
+- `DisplayGuards.register(plugin, holder -> holder instanceof MyMenu)` removes marked stacks that escape a menu (drops, pickups, spawns, and a sweep on menu close and join). Throws if the library was not relocated.
+
+### Items (`dev.oakheart.item`), 1.4
+
+- `BlockCustody`: `removeAllWithoutDrops(blocks)` snapshots every block, then empties and removes each without drops (furnace XP and campfire items included); `restore(state)` puts one back.
+- `VoucherRedeemer`: two-phase redemption. `begin(event, idKey, isVoucher)` on a right-click returns a single-use token; `complete(token, grant)` re-finds the voucher in the same hand, runs the grant, and consumes one only if it succeeded. Refuses CREATIVE and SPECTATOR by default.
+
+### Storage (`dev.oakheart.storage`), 1.4
+
+- `SerialWriter`: one daemon thread, FIFO. `submit`, `supply`, `submitLatest(key, task)` (supersedes queued tasks of the same key), `drain(timeout)` for `onDisable`.
+- `SqliteStore`: subclass with `schemaVersion()` and `migrate(connection, from)`. One writer thread, a synchronous query-only reader, WAL, `user_version` migrations in one transaction, and refusal to open a newer schema.
+
+```java
+public final class LogStore extends SqliteStore {
+    public LogStore(Path file, Logger logger) {
+        super(file, "OakLog-db-writer", logger, false);
+    }
+    @Override protected int schemaVersion() { return 1; }
+    @Override protected void migrate(Connection c, int from) throws SQLException {
+        try (Statement st = c.createStatement()) {
+            st.execute("CREATE TABLE entries (id INTEGER PRIMARY KEY, player TEXT, at INTEGER)");
+        }
+    }
+}
+
+store.open();                                    // onEnable, blocking
+store.write("INSERT INTO entries (player, at) VALUES (?, ?)", uuid, now);
+int n = store.read(c -> count(c));               // main thread OK, small queries only
+store.close();                                   // onDisable, last
+```
+
 ## Gradle Setup
 
 Publish to local Maven:
@@ -99,9 +134,9 @@ repositories {
 }
 
 dependencies {
-    implementation 'dev.oakheart:oakheart-core:1.1.0'
+    implementation 'dev.oakheart:oakheart-core:1.3.2'
     // Only if the plugin uses custom item models:
-    // implementation 'dev.oakheart:oakheart-models:1.1.0'
+    // implementation 'dev.oakheart:oakheart-models:1.3.2'
 }
 
 shadowJar {
@@ -109,10 +144,14 @@ shadowJar {
     relocate 'dev.oakheart.message', 'dev.oakheart.yourplugin.libs.message'
     relocate 'dev.oakheart.command', 'dev.oakheart.yourplugin.libs.command'
     relocate 'dev.oakheart.util', 'dev.oakheart.yourplugin.libs.util'
+    // 1.4 packages:
+    relocate 'dev.oakheart.menu', 'dev.oakheart.yourplugin.libs.menu'
+    relocate 'dev.oakheart.item', 'dev.oakheart.yourplugin.libs.item'
+    relocate 'dev.oakheart.storage', 'dev.oakheart.yourplugin.libs.storage'
 }
 ```
 
 ## Requirements
 
-- Java 21
-- Paper 1.21.10
+- Java 25
+- Paper 26.3 (oakheart-core 1.4 compiles against 26.3)
