@@ -35,8 +35,9 @@ import java.util.logging.Logger;
  * <table>
  *   <caption>Guarded events</caption>
  *   <tr><th>Event</th><th>Action</th></tr>
- *   <tr><td>A {@code DROP_*} click on a marked slot item, or any click outside the window with
- *       a marked cursor</td><td>Cancel; empty that slot or the cursor</td></tr>
+ *   <tr><td>A {@code DROP_*} click on a marked item in the player's inventory or a real
+ *       container (not a menu's own slots), or any click outside the window with a marked
+ *       cursor</td><td>Cancel; empty that slot or the cursor</td></tr>
  *   <tr><td>{@code PlayerDropItemEvent} with a marked stack</td><td>Cancel, and empty the item
  *       entity's stack: after a cancel the server puts that stack back into the inventory, so
  *       emptying it is what deletes the copy</td></tr>
@@ -99,6 +100,7 @@ public final class DisplayGuards implements Listener {
     public void onClick(InventoryClickEvent event) {
         InventoryAction action = event.getAction();
         if ((action == InventoryAction.DROP_ALL_SLOT || action == InventoryAction.DROP_ONE_SLOT)
+                && escapedSlot(event)
                 && DisplayItems.isDisplay(event.getCurrentItem())) {
             event.setCancelled(true);
             warn(event.getWhoClicked(), event.getCurrentItem(), "a drop click");
@@ -114,6 +116,17 @@ public final class DisplayGuards implements Listener {
             warn(event.getWhoClicked(), cursor, "a cursor drop");
             event.getView().setCursor(null);
         }
+    }
+
+    /**
+     * Whether the clicked slot is somewhere a display item should never be: the player's own
+     * inventory, or a real container (one with a location). A menu's own slots hold display items by
+     * design; the menu cancels clicks on them, and pressing Q on a button must not delete it.
+     */
+    private static boolean escapedSlot(InventoryClickEvent event) {
+        Inventory clicked = event.getClickedInventory();
+        return clicked != null
+                && (clicked == event.getView().getBottomInventory() || clicked.getLocation() != null);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
